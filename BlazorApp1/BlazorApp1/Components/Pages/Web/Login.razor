@@ -1,0 +1,87 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.CustomerDTOs
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+@inject CustomerService CustomerService
+@inject IJSRuntime JS
+
+<PageTitle>Login</PageTitle>
+
+<h3 class="text-center mb-4 mt-3">Welcome Back</h3>
+
+@if(response != null)
+{
+    @if (response.Success)
+    {
+        <div class="alert alert-success">
+            @response.Data.Message, Welcome @response.Data.CustomerName
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            @String.Join(", ", response.Errors ?? new List<string> {"Unknown error occurred."})
+        </div>
+    }
+}
+
+@if (isLoading)
+{
+    <Loader/>
+}
+else
+{
+    <div class="container d-flex justify-content-center">
+        <div class="card shadow-lg p-4 rounded-4" style="max-width: 400px; width: 100%;">
+            <EditForm Model="@loginModel" OnValidSubmit="@HandleLogin">
+                <DataAnnotationsValidator />
+                @* <ValidationSummary /> *@
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email</label>
+                    <InputText type="email" class="form-control" @bind-Value="loginModel.Email" placeholder="user@example.com" />
+                    <ValidationMessage For="@(() => loginModel.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <InputText type="password" class="form-control" @bind-Value="loginModel.Password" placeholder="Enter your password" />
+                    <ValidationMessage For="@(() => loginModel.Password)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
+            </EditForm>
+
+            <div class="text-center mt-3">
+                <p class="text-muted">
+                    Don’t have an account?
+                    <a href="/register" class="text-decoration-none">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private LoginDTO loginModel = new();
+    private bool isLoading = false;
+    private ApiResponse<LoginResponseDTO>? response;
+
+
+    private async Task HandleLogin()
+    {
+        isLoading = true;
+        try
+        {
+            response = await CustomerService.Login(loginModel);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

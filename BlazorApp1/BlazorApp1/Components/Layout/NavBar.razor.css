@@ -1,0 +1,118 @@
+﻿/* Navbar base */
+.navbar {
+    background-color: white;
+    color: black;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #ebebeb;
+}
+
+/* Brand name */
+.navbar-brand {
+    font-size: 1.25rem;
+    color: black;
+    text-decoration: none;
+}
+
+    .navbar-brand:hover {
+        color: #e2e2e2;
+    }
+
+/* Toggler (hamburger) */
+.navbar-toggler {
+    appearance: none;
+    cursor: pointer;
+    width: 2.75rem;
+    height: 2.5rem;
+    position: absolute;
+    top: 0.75rem;
+    right: 1rem;
+    z-index: 20;
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='black' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.8%29' stroke-width='2' stroke-linecap='round' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.5rem;
+    border: 1px solid gray;
+    background-color: black;
+}
+
+    .navbar-toggler:checked ~ .collapse-menu {
+        display: block;
+    }
+
+    .navbar-toggler:checked {
+        filter: brightness(80%);
+    }
+
+/* Collapse menu (mobile) */
+.collapse-menu {
+    display: none;
+    background-color: white;
+    position: absolute;
+    top: 3.5rem;
+    left: 0;
+    width: 100%;
+    padding: 1rem 0;
+    border-bottom: 1px solid #ebebeb;
+    z-index: 10;
+}
+
+.nav-item {
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.nav-link {
+    color: #d7d7d7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s;
+}
+
+    .nav-link:hover {
+        color: white;
+        background-color: rgba(255,255,255,0.15);
+    }
+
+a.active {
+    background-color: rgba(255,255,255,0.25);
+    color: white;
+}
+
+/* Larger screens — horizontal layout */
+@media (min-width: 768px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+    .collapse-menu {
+        display: flex !important;
+        background: none;
+        position: static;
+        width: auto;
+        padding: 0;
+        border-bottom: 0px;
+    }
+
+    .nav-item {
+        margin-bottom: 0;
+    }
+
+    .nav-link {
+        color: #d7d7d7;
+    }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+    .active {
+        background: rgba(255,255,255,0.2);
+    }
+}
+
+/* Optional icons (Bootstrap Icons) */
+.bi {
+    font-size: 1.2rem;
+}

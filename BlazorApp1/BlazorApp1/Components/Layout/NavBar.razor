@@ -1,0 +1,38 @@
+﻿@inherits LayoutComponentBase
+
+<header class="navbar navbar-expand-lg navbar-light">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="">My E-Commerce</a>
+
+        @* <input type="checkbox" id="menuToggle" class="navbar-toggler" title="Navigation menu" />
+        <label for="menuToggle" class="navbar-toggler-icon"></label> *@
+
+        <input type="checkbox" title="Navigation menu" class="navbar-toggler navbar-toggler-icon" />
+
+
+        <div class="collapse-menu">
+            <nav class="navbar-nav ms-auto flex-column flex-lg-row align-items-lg-center">
+                <div class="nav-item px-1">
+                    <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                        <span class="bi bi-boxes me-1"></span> Home
+                    </NavLink>
+                </div>
+                <div class="nav-item px-1">
+                    <NavLink class="nav-link" href="profile">
+                        <span class="bi bi-people-fill me-1"></span> My Profile
+                    </NavLink>
+                </div>
+                <div class="nav-item px-1">
+                    <NavLink class="nav-link" href="login">
+                        <span class="bi bi-people-fill me-1"></span> Login
+                    </NavLink>
+                </div>
+
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="container py-4">
+    @Body
+</main>

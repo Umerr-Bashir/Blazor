@@ -1,0 +1,113 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.CustomerDTOs
+@using EcommerceApp.DTOs.CustomerDTO
+@layout BlazorApp1.Components.Layout.WebLayout
+@inject CustomerService CustomerService
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<PageTitle>Register</PageTitle>
+
+<h3 class="text-center mb-4">Create an Account</h3>
+
+@if (registerResponse != null)
+{
+    @if (registerResponse.Success)
+    {
+        <div class="alert alert-success">
+            Registration successful! Welcome, @registerResponse.Data?.FirstName
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            @string.Join(", ", registerResponse.Errors ?? new List<string> { "Unknown error occurred." })
+        </div>
+    }
+}
+
+
+@if (isLoading)
+{
+    <Loader/>
+}
+else
+{
+    <div class="container d-flex justify-content-center mb-4">
+        <div class="card shadow-lg p-4 rounded-4" style="max-width: 500px; width: 100%;">
+            <EditForm Model="@registerModel" OnValidSubmit="@HandleRegister">
+                <DataAnnotationsValidator />
+                @* <ValidationSummary /> *@
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">First Name</label>
+                    <InputText class="form-control" @bind-Value="registerModel.FirstName" placeholder="Enter your first name" />
+                    <ValidationMessage For="@(() => registerModel.FirstName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Last Name</label>
+                    <InputText class="form-control" @bind-Value="registerModel.LastName" placeholder="Enter your last name" />
+                    <ValidationMessage For="@(() => registerModel.LastName)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email</label>
+                    <InputText type="email" class="form-control" @bind-Value="registerModel.Email" placeholder="user@example.com" />
+                    <ValidationMessage For="@(() => registerModel.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Phone Number</label>
+                    <InputText class="form-control" @bind-Value="registerModel.PhoneNumber" placeholder="e.g. +123456789" />
+                    <ValidationMessage For="@(() => registerModel.PhoneNumber)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Date of Birth</label>
+                    <InputDate class="form-control" @bind-Value="registerModel.DateOfBirth" />
+                    <ValidationMessage For="@(() => registerModel.DateOfBirth)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <InputText type="password" class="form-control" @bind-Value="registerModel.Password" placeholder="Enter a strong password" />
+                    <ValidationMessage For="@(() => registerModel.Password)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-2">Register</button>
+            </EditForm>
+
+            <div class="text-center mt-3">
+                <p class="text-muted">
+                    Already have an account?
+                    <a href="/login" class="text-decoration-none">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private ApiResponse<CustomerResponseDTO>? registerResponse;
+    private CustomerRegistrationDTO registerModel = new();
+    private bool isLoading = false;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        try
+        {
+            registerResponse = await CustomerService.Register(registerModel);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+}

@@ -1,0 +1,74 @@
+﻿@page "/counter"
+@using BlazorApp1.Models
+@using BlazorApp1.Services
+@rendermode InteractiveServer
+@inject OrderService OrderService
+
+
+<PageTitle>Orders</PageTitle>
+
+<h1>Orders</h1>
+
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Customer Name</th>
+            <th scope="col">OrderId</th>
+            <th scope="col">ProductName</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Unit Price</th>
+            <th scope="col">Total Price</th>
+            <th scope="col">GrandTotal Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (orders == null)
+        {
+            <tr>
+                <td colspan="8" class="text-center">Loading...</td>
+            </tr>
+        }
+        else if (!orders.Any())
+        {
+            <tr>
+                <td colspan="8" class="text-center">No orders found.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var order in orders)
+            {
+                if (order.OrderDetails != null && order.OrderDetails.Any())
+                {
+                    int i = 1;
+                    @foreach (var detail in order.OrderDetails)
+                    {
+                        <tr>
+                            <td>@i</td>
+                            <td>@order.Name</td>
+                            <td>@order.Id</td>
+                            <td>@detail.Name</td>
+                            <td>@detail.Quantity</td>
+                            <td>@detail.UnitPrice</td>
+                            <td>@detail.TotalPrice</td>
+                            <td>@order.GrandTotal</td>
+                        </tr>
+                        i++;
+                    }
+                }
+            }
+        }
+    </tbody>
+</table>
+
+
+@code {
+    private List<OrderResponseDTO>? orders;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await OrderService.GetAllOrders();
+    }
+}

@@ -1,0 +1,104 @@
+﻿@page "/todo"
+@layout BlazorApp1.Components.Layout.WebLayout
+@using BlazorApp1.Models
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@attribute [StreamRendering]
+
+
+<PageTitle>Home</PageTitle>
+@* 
+<div class="row">
+    <div class="col-md-6">
+        <h1>Products</h1>
+    </div>
+    <div class="col-md-6">
+        <button type="button" data-bs-toggle="modal" data-bs-target="#exampleModal" class="btn btn-primary float-end" @onclick="() => ShowModal()">Add Product</button>
+    </div>
+</div>
+
+@if (products == null)
+{
+    <p><em>Loading products...</em></p>
+}
+else if (!products.Any())
+{
+    <p><em>No products found.</em></p>
+}
+else
+{
+    <div class="row">
+        @foreach (var product in products)
+        {
+            <div class="col-4 mb-4">
+                <div class="card shadow-sm p-3">
+                    <h5>@product.Name</h5>
+                    <p>Price: <b>@product.Price</b></p>
+                    <p>@product.Description</p>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                @if (selectedProduct != null)
+                {
+                    <div class="modal-header">
+                        <h5 class="modal-title">@selectedProduct.Name</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><b>Price:</b> @selectedProduct.Price</p>
+                        <p><b>Description:</b> @selectedProduct.Description</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-success">Add to Cart</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal -->
+@code {
+    private List<ProductResponseDTO>? products;
+    private ProductResponseDTO? selectedProduct;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductService.GetAllProducts();
+    }
+
+    private async Task ShowModal()
+    {
+        await JS.InvokeVoidAsync("bootstrapModalShow", "#productModal");
+    }
+} *@
+
+
+
+
+
+@* <PageTitle>Todos</PageTitle>
+
+<h1>Todos</h1>
+
+<p>List of Todos @todos.Count(todo => !todo.IsDone)</p>
+<ul>
+    @foreach(var todo in todos)
+    {
+    <li>
+        <input type="checkbox" value="@todo.!IsDone" />
+        <input value="@todo.Title" />
+    </li>
+    }
+</ul>
+
+<input placeholder="Something todo" @bind="newTodo" />
+<button @onclick="AddTodo">Add Todo</button>
+
+@code {
+    } *@
