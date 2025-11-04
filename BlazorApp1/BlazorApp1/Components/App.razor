@@ -1,4 +1,7 @@
-﻿<!DOCTYPE html>
+﻿@using BlazorApp1.Session
+@inject SessionManager SessionManager
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -27,3 +30,16 @@
 </body>
 
 </html>
+
+@code {
+    // private bool _restored = false;
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+
+    //     if (firstRender)
+    //     {
+    //         await SessionManager.RestoreSessionAsync();
+    //         StateHasChanged(); update UI after restoring session
+    //     }
+    // }
+}

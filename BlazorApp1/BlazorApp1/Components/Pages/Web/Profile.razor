@@ -1,0 +1,238 @@
+﻿@page "/profile"
+@using System.ComponentModel.DataAnnotations
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using BlazorApp1.Session
+@using ECommerceApp.DTOs.CustomerDTOs
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+@inject CustomerService CustomerService
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@inject SessionState Session
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject AuthState AuthState
+
+<h3 class="mb-3">My Profile</h3>
+
+@* @if (error != null)
+{
+    
+     <div class="alert alert-danger">
+         @String.Join(", ", new List<string> { "Unknown error occurred." })
+     </div>
+} *@
+
+@* @if(details == null)
+{
+    try
+    {
+        Nav.NavigateTo("/login");
+    }
+    catch(Exception ex)
+    {
+        throw (ex.Message);
+    }
+} *@
+
+<div class="card shadow-sm p-4 mb-4">
+    <div class="row align-items-center">
+
+        <!-- LEFT SIDE: PROFILE PICTURE -->
+        <div class="col-md-3 text-center border-end">
+            <img src="https://plus.unsplash.com/premium_photo-1739786996022-5ed5b56834e2?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZW1wdHklMjBhdmF0YXJ8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&q=60&w=600"
+                 alt="Profile Picture"
+                 class="rounded-circle mb-3 shadow-sm"
+                 width="120" height="120" />
+
+        </div>
+
+        <!-- RIGHT SIDE: USER DETAILS -->
+        @if(details != null)
+        {   
+        <div class="col-md-9 ps-md-4 mt-4 mt-md-0">
+                <h4 class="fw-bold mb-3">Profile Details</h4>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Name</label>
+                        <input readonly type="text" class="form-control" value="@details.Data.FirstName @details.Data.LastName" placeholder="Enter your name" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Email</label>
+                        <input readonly type="email" class="form-control" value="@details.Data.Email" placeholder="Enter your email" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Phone Number</label>
+                        <input readonly type="text" class="form-control" value="@details.Data.PhoneNumber" placeholder="Enter your Number" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Date Of Birth</label>
+                        <input readonly type="email" class="form-control" value="@details.Data.DateOfBirth" placeholder="Enter your DOB" />
+                    </div>
+                </div>
+
+                @*   <button class="btn btn-primary mt-2">
+                <i class="bi bi-save me-1"></i> Save Profile
+            </button> *@
+            </div>
+        }
+
+        
+
+    </div>
+</div>
+
+<h4 class="mb-3">Addresses</h4>
+
+<div class="card shadow-sm p-4 mb-4">
+    
+    @* @if (UProfile.Addresses.Any())
+    { *@
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Street</th>
+                    <th>City</th>
+                    <th>Zip</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                    <tr>
+                            @* <td><input type="text" class="form-control"/></td>
+                            <td><input type="text" class="form-control" /></td>
+                            <td><input type="text" class="form-control" /></td>
+                            <td>
+                                <button class="btn btn-sm btn-primary me-2">Save</button>
+                                <button class="btn btn-sm btn-secondary">Cancel</button>
+                            </td> *@
+                        
+                            <td>G Block</td>
+                            <td>Faisalabad</td>
+                            <td>32000</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                            </td>
+                        
+                    </tr>
+            </tbody>
+        </table>
+    @* } *@
+    @* else
+    {
+        <p class="text-muted">No addresses added yet.</p>
+    } *@
+</div>
+
+<div class="float-end">
+    <button class="btn btn-sm btn-danger me-2 mb-4" @onclick="() => Logout()">Log Out</button>
+</div>
+
+@code {
+    // private UserProfile UProfile = new();
+    private ApiResponse<CustomerResponseDTO> details = null;
+    private int userId = 0;
+    private string? error;
+    private int? id;
+    private bool loaded = false;
+    // private Address NewAddress = new();
+    // private Address? EditAddress;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !loaded)
+        {
+            details = await CustomerService.GetProfileAsync();
+            if(details.Success != false)
+            {
+                loaded = true;
+                StateHasChanged(); // refresh UI after load
+            }
+            else
+            {
+                Nav.NavigateTo("/login");
+            }
+
+        }
+    }
+
+    private async Task Logout()
+    {
+        await AuthState.LogoutAsync();
+        Nav.NavigateTo("/login");
+        // var authToken = await LocalStorage.GetItemAsync<string>("authToken");
+        // if (authToken != null)
+        // {
+        //     await LocalStorage.RemoveItemAsync("authToken");
+        //     await LocalStorage.RemoveItemAsync("userId");
+        //     Nav.NavigateTo("/login");
+        // }
+    }
+
+    // private void SaveProfile()
+    // {
+    //     Here you would call an API or service to save
+    //     Console.WriteLine($"Saved profile: {UProfile.Name}, {UProfile.Email}");
+    // }
+
+    // private void AddAddress()
+    // {
+    //     if (!string.IsNullOrWhiteSpace(NewAddress.Street))
+    //     {
+    //         UProfile.Addresses.Add(new Address
+    //         {
+    //             Street = NewAddress.Street,
+    //             City = NewAddress.City,
+    //             ZipCode = NewAddress.ZipCode
+    //         });
+    //         NewAddress = new Address(); reset form
+    //     }
+    // }
+
+    // private void Edit(Address address)
+    // {
+    //     EditAddress = address;
+    // }
+
+    // private void SaveAddress(Address address)
+    // {
+    //     EditAddress = null;
+    //     Console.WriteLine($"Updated address: {address.Street}");
+    // }
+
+    // private void CancelEdit()
+    // {
+    //     EditAddress = null;
+    // }
+
+    // private void Delete(Address address)
+    // {
+    //     UProfile.Addresses.Remove(address);
+    // }
+
+    // public class UserProfile
+    // {
+    //     [Required]
+    //     public string Name { get; set; } = "";
+    //     [EmailAddress]
+    //     public string Email { get; set; } = "";
+    //     public List<Address> Addresses { get; set; } = new();
+    // }
+
+    // public class Address
+    // {
+    //     public string Street { get; set; } = "";
+    //     public string City { get; set; } = "";
+    //     public string ZipCode { get; set; } = "";
+    // }
+
+    // private async Task userIdd()
+    // {
+    //     id = await LocalStorage.GetItemAsync<int>("UserId");
+    // }
+}

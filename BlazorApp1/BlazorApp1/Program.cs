@@ -1,5 +1,8 @@
 using BlazorApp1.Components;
 using BlazorApp1.Services;
+using BlazorApp1.Session;
+using Blazored.LocalStorage;
+using Blazored.SessionStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +15,16 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("https://localhost:7087/")
 });
 
+// Register Services
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<SessionManager>();
+builder.Services.AddScoped<AuthState>();
+
+// Session State
+builder.Services.AddScoped<SessionState>();
+builder.Services.AddBlazoredSessionStorage();
+builder.Services.AddBlazoredLocalStorage();
 
 var app = builder.Build();
 

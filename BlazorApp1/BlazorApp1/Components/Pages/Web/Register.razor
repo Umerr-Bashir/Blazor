@@ -1,12 +1,13 @@
 ﻿@page "/register"
 @using System.ComponentModel.DataAnnotations
 @using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
 @using BlazorApp1.Models
 @using BlazorApp1.Services
 @using ECommerceApp.DTOs.CustomerDTOs
 @using EcommerceApp.DTOs.CustomerDTO
 @layout BlazorApp1.Components.Layout.WebLayout
-@inject CustomerService CustomerService
+@inject AuthService AuthService
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
@@ -102,7 +103,7 @@ else
         isLoading = true;
         try
         {
-            registerResponse = await CustomerService.Register(registerModel);
+            registerResponse = await AuthService.Register(registerModel);
         }
         finally
         {

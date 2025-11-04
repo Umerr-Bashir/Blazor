@@ -1,4 +1,5 @@
-﻿using BlazorApp1.Models;
+﻿using BlazorApp1.DTOs;
+using BlazorApp1.Models;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 
 namespace BlazorApp1.Services

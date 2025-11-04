@@ -1,4 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.CustomerDTOs
+@inherits LayoutComponentBase
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject CustomerService CustomerService
+@inject AuthState AuthState
+
 
 <header class="navbar navbar-expand-lg navbar-light">
     <div class="container-fluid">
@@ -13,20 +20,26 @@
         <div class="collapse-menu">
             <nav class="navbar-nav ms-auto flex-column flex-lg-row align-items-lg-center">
                 <div class="nav-item px-1">
-                    <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                         <span class="bi bi-boxes me-1"></span> Home
                     </NavLink>
                 </div>
-                <div class="nav-item px-1">
-                    <NavLink class="nav-link" href="profile">
-                        <span class="bi bi-people-fill me-1"></span> My Profile
-                    </NavLink>
-                </div>
-                <div class="nav-item px-1">
-                    <NavLink class="nav-link" href="login">
-                        <span class="bi bi-people-fill me-1"></span> Login
-                    </NavLink>
-                </div>
+                @if(AuthState.IsLoggedIn == true)
+                {
+                    <div class="nav-item px-1">
+                        <NavLink class="nav-link" href="profile">
+                            <span class="bi bi-people-fill me-1"></span> My Profile
+                        </NavLink>
+                    </div>
+                }
+                else
+                {
+                    <div class="nav-item px-1">
+                        <NavLink class="nav-link" href="login">
+                            <span class="bi bi-people-fill me-1"></span> Login
+                        </NavLink>
+                    </div>
+                }
 
             </nav>
         </div>
@@ -36,3 +49,44 @@
 <main class="container py-4">
     @Body
 </main>
+
+@code {
+    private bool loaded = false;
+    private string? res ;
+    private bool initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !initialized)
+        {
+            await AuthState.InitializeAsync(); // safe here ✅
+            AuthState.OnChange += StateHasChanged;
+            initialized = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= StateHasChanged;
+    }
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (firstRender && !loaded)
+    //     {
+    //         try
+    //         {
+    //             res = await LocalStorage.GetItemAsync<string>("authToken");
+    //         }
+    //         catch (InvalidOperationException)
+    //         {
+    //             Ignored during prerender
+    //         }
+    //         finally
+    //         {
+    //             loaded = true;
+    //             StateHasChanged(); Render login form after check
+    //         }
+    //     }
+    // }
+}

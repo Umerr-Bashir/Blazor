@@ -1,54 +1,34 @@
-﻿using BlazorApp1.Models;
+﻿using BlazorApp1.DTOs;
 using EcommerceApp.DTOs.CustomerDTO;
 using ECommerceApp.DTOs.CustomerDTOs;
+using System.Net.Http.Json;
 
 namespace BlazorApp1.Services
 {
     public class CustomerService
     {
         private readonly HttpClient _http;
+        private readonly AuthService _authService;
 
-        public CustomerService(HttpClient http)
+        public CustomerService(HttpClient http, AuthService authService)
         {
             _http = http;
+            _authService = authService;
         }
 
-        public async Task<ApiResponse<CustomerResponseDTO>> Register(CustomerRegistrationDTO register)
+        public async Task<ApiResponse<CustomerResponseDTO>> GetProfileAsync()
         {
-            var response = await _http.PostAsJsonAsync("api/Customers/RegisterCustomer", register);
-
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<CustomerResponseDTO>>();
-
-            // If server didn't return a valid ApiResponse
-            if (result == null)
+            var userId = await _authService.GetUserIdAsync();
+            if (string.IsNullOrEmpty(userId))
             {
-                return new ApiResponse<CustomerResponseDTO>(
-                    500,
-                    errors: new List<string> { "No response from server." }
-                );
+                return new ApiResponse<CustomerResponseDTO>
+                (500, errors: new List<string> { "UserId not found." });
             }
+            var response = await _http.GetFromJsonAsync<ApiResponse<CustomerResponseDTO>>($"api/Customers/GetCustomerById/{userId}");
 
-            return result;
+            return response ?? new ApiResponse<CustomerResponseDTO>
+                (500,errors: new List<string> { "No response from server." });
         }
-
-        public async Task<ApiResponse<LoginResponseDTO>> Login(LoginDTO login)
-        {
-            var response = await _http.PostAsJsonAsync("api/Customers/Login", login);
-
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponseDTO>>();
-
-            // If server didn't return a valid ApiResponse
-            if (result == null)
-            {
-                return new ApiResponse<LoginResponseDTO>(
-                    500,
-                    errors: new List<string> { "No response from server." }
-                );
-            }
-
-            return result;
-        }
-
 
     }
 }

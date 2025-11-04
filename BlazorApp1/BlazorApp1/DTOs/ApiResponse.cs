@@ -1,4 +1,4 @@
-﻿namespace BlazorApp1.Models
+﻿namespace BlazorApp1.DTOs
 {
     public class ApiResponse<T>
     {
