@@ -1,0 +1,241 @@
+﻿@page "/products"
+@rendermode InteractiveServer
+@layout BlazorApp1.Components.Layout.MainLayout
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using BlazorApp1.Services.Components
+@using ECommerceApp.DTOs.CategoryDTOs
+@using ECommerceApp.DTOs.ProductDTOs
+@inject IJSRuntime JS
+@inject ProductService ProductService
+@inject CategoryService CategoryService
+@inject MyToastService MyToastService
+
+<PageTitle>Products</PageTitle>
+
+
+<div class="row">
+    <div class="col-md-6">
+        <h1>Products</h1>
+    </div>
+    <div class="col-md-6">
+        <button type="button" class="btn btn-primary float-end" @onclick="()=>OpenModal()" >Add Product</button>
+    </div>
+</div>
+
+ 
+@if (productDetails == null)
+{
+    <Loader/>
+}
+else
+{
+    <div class="row">
+        @if(productDetails.Data != null && productDetails != null && productDetails.Data.Any())
+        {
+            @foreach (var product in productDetails.Data)
+            {
+                <div class="col-4 mb-4">
+                    <div class="card shadow-sm p-3">
+                        <h5>@product.Name</h5>
+                        <p>Price: <b>@product.Price</b></p>
+                        <p>@product.Description</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 mt-5 text-center">
+                <p>No Products Found</p>
+            </div>
+        }
+
+    </div>
+    @* <div class="col-md-3 mb-4">
+        <div class="card h-100 shadow-sm">
+            <img src="https://via.placeholder.com/250" class="card-img-top" alt="Product Image" />
+
+            <div class="card-body">
+                <h5 class="card-title">@product.Name</h5>
+                <p class="card-text text-muted">@product.Description</p>
+
+                <h6 class="text-primary fw-bold">$@product.Price</h6>
+            </div>
+
+            <div class="card-footer bg-white border-0">
+                <button class="btn btn-sm btn-primary w-100" @onclick="() => AddToCart(product)">
+                    <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    </div> *@
+
+    @if (isLoading)
+    {
+        <Loader />
+    }
+    else
+    {
+        <BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
+            <Body>
+                <EditForm Model="@productModel" OnValidSubmit="SaveCategory">
+                    <DataAnnotationsValidator />
+
+                    <InputNumber class="form-control" @bind-Value="productModel.CategoryId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Product Name</label>
+                        <InputText class="form-control" @bind-Value="productModel.Name" />
+                        <ValidationMessage For="@(() => productModel.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Product Description</label>
+                        <InputText class="form-control" @bind-Value="productModel.Description" />
+                        <ValidationMessage For="@(() => productModel.Description)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Product Price</label>
+                        <InputNumber class="form-control"  @bind-Value="productModel.Price"/>
+                        <ValidationMessage For="@(() => productModel.Price)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Stock</label>
+                        <InputNumber class="form-control" @bind-Value="productModel.StockQuantity" />
+                        <ValidationMessage For="@(() => productModel.StockQuantity)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Discount%</label>
+                        <InputNumber class="form-control" @bind-Value="productModel.DiscountPercentage" />
+                        <ValidationMessage For="@(() => productModel.DiscountPercentage)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <InputSelect class="form-control" @bind-Value="productModel.CategoryId" DisplayName="-- Select Category --">
+                            <option selected value="">-- Select Category --</option>
+                            @if (categoriesList != null && categoriesList.Data != null && categoriesList.Data.Any())
+                            {
+                                @foreach (var cat in categoriesList.Data)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            }
+
+                        </InputSelect>
+                        <ValidationMessage For="@(() => productModel.CategoryId)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Product Image</label>
+                        <InputFile class="form-control" @bind-Value="productModel.ImageUrl" Accept=".png,.jpg,.jpeg" />
+                        <ValidationMessage For="@(() => productModel.ImageUrl)" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
+                        <button class="btn btn-primary">Save</button>
+
+                    </div>
+                </EditForm>
+            </Body>
+        </BlazorModal>
+    }
+}
+
+
+@code {
+    private ApiResponse<List<ProductResponseDTO>> productDetails = new();
+    private List<string>? error;
+    private bool loaded = false;
+    private bool isLoading = false;
+    private bool isModalOpen = false;
+    private ProductCreateDTO productModel = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !loaded)
+        {
+            isLoading = true;
+            await getProducts();
+            isLoading = false;
+
+        }
+    }
+
+    // Opens Modal
+    private async Task OpenModal()
+    {
+        await getCategories();
+        productModel = new ProductCreateDTO();
+        isModalOpen = true;
+    }
+
+    // Modal Closes
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    // Saves Address
+    private async Task SaveCategory()
+    {
+        isLoading = true;
+        var response = await ProductService.AddProductAsync(productModel);
+        if (response.Success == true)
+        {
+            MyToastService.Success("Product Added successfully.");
+            await getProducts();
+            isModalOpen = false;
+            StateHasChanged();
+            isLoading = false;
+        }
+        isLoading = false;
+    }
+
+    //Get Categories Method
+    private ApiResponse<List<CategoryResponseDTO>> categoriesList = new();
+    private async Task getCategories()
+    {
+        var categoryRes = await CategoryService.GetCategoriesAsync();
+
+        if (categoryRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!categoryRes.Success)
+        {
+            error = categoryRes.Errors;
+        }
+        else
+        {
+            categoriesList = categoryRes;
+        }
+    }
+
+
+
+    // Get Products Method
+    private async Task getProducts()
+    {
+        var productRes = await ProductService.GetAllProducts();
+
+        if (productRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!productRes.Success)
+        {
+            error = productRes.Errors;
+        }
+        else
+        {
+            productDetails = productRes;
+        }
+    }
+}

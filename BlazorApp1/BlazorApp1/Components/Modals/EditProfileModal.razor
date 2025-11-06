@@ -1,0 +1,45 @@
+﻿@using Blazored.Modal
+@using Blazored.Modal.Services
+@inject IModalService ModalService
+
+<EditForm Model="@address" OnValidSubmit="@HandleSubmit">
+    <div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label">Street</label>
+            <InputText class="form-control" @bind-Value="address.Street" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">City</label>
+            <InputText class="form-control" @bind-Value="address.City" />
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+        <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+</EditForm>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } = default!;
+    [Parameter] public int UserId { get; set; }
+
+    private Address address = new();
+
+    private async Task HandleSubmit()
+    {
+        // Save address logic here (API call, etc.)
+        await ModalInstance.CloseAsync();
+    }
+
+    private async Task Cancel()
+    {
+        await ModalInstance.CancelAsync();
+    }
+
+    public class Address
+    {
+        public string Street { get; set; }
+        public string City { get; set; }
+    }
+}

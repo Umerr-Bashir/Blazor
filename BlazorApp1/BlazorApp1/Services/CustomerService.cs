@@ -24,6 +24,7 @@ namespace BlazorApp1.Services
                 return new ApiResponse<CustomerResponseDTO>
                 (500, errors: new List<string> { "UserId not found." });
             }
+            
             var response = await _http.GetFromJsonAsync<ApiResponse<CustomerResponseDTO>>($"api/Customers/GetCustomerById/{userId}");
 
             return response ?? new ApiResponse<CustomerResponseDTO>

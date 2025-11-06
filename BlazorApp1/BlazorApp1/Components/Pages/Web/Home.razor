@@ -1,4 +1,65 @@
 ﻿@page "/"
+@using BlazorApp1.Components.Modals
 @layout BlazorApp1.Components.Layout.WebLayout
 @rendermode InteractiveServer
-@inject IJSRuntime JS
+@inject Blazored.Modal.Services.IModalService Modal
+
+@* <button class="btn btn-success" @onclick="@(() => Modal.Show<TestModal>("Test"))">Test Modal</button> *@
+
+
+<!-- Button -->
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+    Add Address
+</button>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModalLabel">Add Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Street</label>
+                    <input type="text" class="form-control" @bind="street" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">City</label>
+                    <input type="text" class="form-control" @bind="city" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Zip</label>
+                    <input type="text" class="form-control" @bind="zip" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="() => SaveAddress()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string street = "";
+    private string city = "";
+    private string zip = "";
+
+    private void SaveAddress()
+    {
+        Console.WriteLine($"Saved: {street}, {city}, {zip}");
+        // Hide modal manually (Bootstrap 5)
+        JS.InvokeVoidAsync("bootstrapModalClose", "#addModal");
+    }
+
+    [Inject]
+    IJSRuntime JS { get; set; } = default!;
+}
+
+

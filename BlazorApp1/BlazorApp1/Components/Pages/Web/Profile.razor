@@ -1,39 +1,33 @@
 ﻿@page "/profile"
 @using System.ComponentModel.DataAnnotations
+@using BlazorApp1.Components.Modals
+@using BlazorApp1.Components.Shared
 @using BlazorApp1.DTOs
+@using BlazorApp1.DTOs.ModalDTOs
 @using BlazorApp1.Services
+@using BlazorApp1.Services.Components
 @using BlazorApp1.Session
+@using BlazorBootstrap
+@using ECommerceApp.DTOs.AddressesDTOs
 @using ECommerceApp.DTOs.CustomerDTOs
+@using EcommerceApp.DTOs.AddressDTO
 @layout BlazorApp1.Components.Layout.WebLayout
 @rendermode InteractiveServer
 @inject CustomerService CustomerService
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
 @inject SessionState Session
-@inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject AuthState AuthState
+@inject Blazored.Modal.Services.IModalService Modal
+@inject AddressService addressService;
+@inject IJSRuntime JS;
+@inject MyToastService MyToastService;
+
+
 
 <h3 class="mb-3">My Profile</h3>
 
-@* @if (error != null)
-{
-    
-     <div class="alert alert-danger">
-         @String.Join(", ", new List<string> { "Unknown error occurred." })
-     </div>
-} *@
 
-@* @if(details == null)
-{
-    try
-    {
-        Nav.NavigateTo("/login");
-    }
-    catch(Exception ex)
-    {
-        throw (ex.Message);
-    }
-} *@
 
 <div class="card shadow-sm p-4 mb-4">
     <div class="row align-items-center">
@@ -51,7 +45,10 @@
         @if(details != null)
         {   
         <div class="col-md-9 ps-md-4 mt-4 mt-md-0">
-                <h4 class="fw-bold mb-3">Profile Details</h4>
+                <div class="clearfix mb-2">
+                    <h4 class="fw-bold mb-3 float-start">Profile Details</h4>
+                    <button class="btn btn-sm btn-primary float-end">Edit<span class="bi bi-pencil-fill ms-1"></span></button>
+                </div>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -75,78 +72,158 @@
                     </div>
                 </div>
 
-                @*   <button class="btn btn-primary mt-2">
-                <i class="bi bi-save me-1"></i> Save Profile
-            </button> *@
-            </div>
+        </div>
         }
-
-        
 
     </div>
 </div>
 
-<h4 class="mb-3">Addresses</h4>
+<div class="clearfix mb-2">
+    <h4 class="float-start mb-0">Addresses</h4>
+    <button class="btn btn-sm btn-primary float-end" @onclick="OpenModal" data-bs-target="#addressModal">Add <span class="bi bi-plus"></span></button>
+</div>
+
 
 <div class="card shadow-sm p-4 mb-4">
-    
-    @* @if (UProfile.Addresses.Any())
-    { *@
+
         <table class="table table-bordered mt-3">
             <thead>
                 <tr>
-                    <th>Street</th>
+                    <th>Present Address</th>
+                    <th>Permanent Address</th>
                     <th>City</th>
-                    <th>Zip</th>
-                    <th>Actions</th>
+                    <th>State</th>
+                    <th>Postal Code</th>
+                    <th>Country</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                    <tr>
-                            @* <td><input type="text" class="form-control"/></td>
-                            <td><input type="text" class="form-control" /></td>
-                            <td><input type="text" class="form-control" /></td>
-                            <td>
-                                <button class="btn btn-sm btn-primary me-2">Save</button>
-                                <button class="btn btn-sm btn-secondary">Cancel</button>
-                            </td> *@
-                        
-                            <td>G Block</td>
-                            <td>Faisalabad</td>
-                            <td>32000</td>
+                @if (addressDetails != null && addressDetails.Data != null && addressDetails.Data.Any())
+                {
+                    @foreach (var address in addressDetails.Data)
+                    {
+                        <tr>
+                            <td>@address.PresentAddress</td>
+                            <td>@address.PermanentAddress</td>
+                            <td>@address.City</td>
+                            <td>@address.State</td>
+                            <td>@address.PostalCode</td>
+                            <td>@address.Country</td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAddress(address.Id)">Delete</button>
                             </td>
-                        
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center">No Address Found</td>
                     </tr>
+                }
             </tbody>
+
         </table>
-    @* } *@
-    @* else
-    {
-        <p class="text-muted">No addresses added yet.</p>
-    } *@
 </div>
 
 <div class="float-end">
     <button class="btn btn-sm btn-danger me-2 mb-4" @onclick="() => Logout()">Log Out</button>
 </div>
 
+<!-- Bootstrap Modal -->
+@if (isLoading)
+{
+    <Loader/>
+}
+else
+{
+    // Blazor Modal
+    <BlazorModal Title="Add Address" IsVisible="@isModalOpen" OnClose="CloseModal">
+        <Body>
+            <EditForm Model="@addressModel" OnValidSubmit="SaveAddress">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Present Address</label>
+                    <InputText class="form-control" @bind-Value="addressModel.PresentAddress" />
+                    <ValidationMessage For="@(() => addressModel.PresentAddress)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Permanent Address</label>
+                    <InputText class="form-control" @bind-Value="addressModel.PermanentAddress" />
+                    <ValidationMessage For="@(() => addressModel.PermanentAddress)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">State</label>
+                    <InputText class="form-control" @bind-Value="addressModel.State" />
+                    <ValidationMessage For="@(() => addressModel.State)" />
+
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">City</label>
+                    <InputText class="form-control" @bind-Value="addressModel.City" />
+                    <ValidationMessage For="@(() => addressModel.City)" />
+
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Postal Code</label>
+                    <InputText class="form-control" @bind-Value="addressModel.PostalCode" />
+                    <ValidationMessage For="@(() => addressModel.PostalCode)" />
+
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Country</label>
+                    <InputText class="form-control" @bind-Value="addressModel.Country" />
+                    <ValidationMessage For="@(() => addressModel.Country)" />
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="()=>CloseModal()">Close</button>
+                    <button class="btn btn-primary">Save</button>
+
+                </div>
+            </EditForm>
+        </Body>
+    </BlazorModal>
+
+}
+
 @code {
-    // private UserProfile UProfile = new();
-    private ApiResponse<CustomerResponseDTO> details = null;
+    private ApiResponse<CustomerResponseDTO>? details;
+    private ApiResponse<List<AddressResponseDTO>>? addressDetails = new();
+    private List<AddressResponseDTO>? allAddr = null;
     private int userId = 0;
-    private string? error;
+    private List<string>? error;
     private int? id;
     private bool loaded = false;
-    // private Address NewAddress = new();
-    // private Address? EditAddress;
+    private string? authToken;
+    private ApiResponse<AddressResponseDTO>? addressResponse;
+    private bool isLoading = false;
+    private bool isModalOpen = false;
+    private AddressCreateDTO addressModel = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
         if (firstRender && !loaded)
         {
+            await getAddress();
+
+
+            authToken = await LocalStorage.GetItemAsync<string>("authToken");
+            if (authToken == null)
+            {
+                Nav.NavigateTo("/login", true); // true = force reload
+            }
+
             details = await CustomerService.GetProfileAsync();
             if(details.Success != false)
             {
@@ -157,82 +234,93 @@
             {
                 Nav.NavigateTo("/login");
             }
+            StateHasChanged();
+
 
         }
     }
 
+    // Opens Modal
+    private void OpenModal()
+    {
+        addressModel = new AddressCreateDTO();
+        isModalOpen = true;
+    }
+
+    // Modal Closes
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    // Saves Address
+    private async Task SaveAddress()
+    {
+        var response = await addressService.AddAddressAsync(addressModel);
+        if (response?.Success == true)
+        {
+            MyToastService.Success("Address Added successfully.");
+            await getAddress();
+            isModalOpen = false;
+            StateHasChanged();
+        }
+    }
+
+    //Logout
     private async Task Logout()
     {
         await AuthState.LogoutAsync();
         Nav.NavigateTo("/login");
-        // var authToken = await LocalStorage.GetItemAsync<string>("authToken");
-        // if (authToken != null)
-        // {
-        //     await LocalStorage.RemoveItemAsync("authToken");
-        //     await LocalStorage.RemoveItemAsync("userId");
-        //     Nav.NavigateTo("/login");
-        // }
     }
 
-    // private void SaveProfile()
-    // {
-    //     Here you would call an API or service to save
-    //     Console.WriteLine($"Saved profile: {UProfile.Name}, {UProfile.Email}");
-    // }
+    // DeleteAddress
+    private async Task DeleteAddress(int Id)
+    {
+        try
+        {
+            var response = await addressService.DeleteAddressAsync(Id);
+            if(response != null && response.Success)
+            {
+                if(addressDetails?.Data != null)
+                {
+                    var itemToRemove = addressDetails.Data.FirstOrDefault(a => a.Id == Id);
+                    if (itemToRemove != null)
+                    {
+                        addressDetails.Data.Remove(itemToRemove);
+                    }
+                }
+                MyToastService.Error("Address Deleted.");
+                StateHasChanged();
+            }
+            else
+            {
+                error = new List<string>() { "Failed to delete address" };
+            }
+        }
+        catch(Exception ex)
+        {
+            error = new List<string>() { $"Error deleting address: {ex.InnerException}" };
+        }
 
-    // private void AddAddress()
-    // {
-    //     if (!string.IsNullOrWhiteSpace(NewAddress.Street))
-    //     {
-    //         UProfile.Addresses.Add(new Address
-    //         {
-    //             Street = NewAddress.Street,
-    //             City = NewAddress.City,
-    //             ZipCode = NewAddress.ZipCode
-    //         });
-    //         NewAddress = new Address(); reset form
-    //     }
-    // }
+    }
 
-    // private void Edit(Address address)
-    // {
-    //     EditAddress = address;
-    // }
 
-    // private void SaveAddress(Address address)
-    // {
-    //     EditAddress = null;
-    //     Console.WriteLine($"Updated address: {address.Street}");
-    // }
+    // Get Address Method
+    private async Task getAddress()
+    {
+        var addressRes = await addressService.GetAddressAsync();
 
-    // private void CancelEdit()
-    // {
-    //     EditAddress = null;
-    // }
-
-    // private void Delete(Address address)
-    // {
-    //     UProfile.Addresses.Remove(address);
-    // }
-
-    // public class UserProfile
-    // {
-    //     [Required]
-    //     public string Name { get; set; } = "";
-    //     [EmailAddress]
-    //     public string Email { get; set; } = "";
-    //     public List<Address> Addresses { get; set; } = new();
-    // }
-
-    // public class Address
-    // {
-    //     public string Street { get; set; } = "";
-    //     public string City { get; set; } = "";
-    //     public string ZipCode { get; set; } = "";
-    // }
-
-    // private async Task userIdd()
-    // {
-    //     id = await LocalStorage.GetItemAsync<int>("UserId");
-    // }
+        if (addressRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!addressRes.Success)
+        {
+            error = addressRes.Errors;
+        }
+        else
+        {
+            addressDetails = addressRes;
+        }
+    }
 }

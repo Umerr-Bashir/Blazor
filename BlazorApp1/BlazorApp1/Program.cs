@@ -1,7 +1,9 @@
 using BlazorApp1.Components;
 using BlazorApp1.Services;
+using BlazorApp1.Services.Components;
 using BlazorApp1.Session;
 using Blazored.LocalStorage;
+using Blazored.Modal;
 using Blazored.SessionStorage;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,14 +19,21 @@ builder.Services.AddScoped(sp => new HttpClient
 
 // Register Services
 builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<AddressService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SessionManager>();
 builder.Services.AddScoped<AuthState>();
+builder.Services.AddScoped<CategoryService>();
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<MyToastService>();
 
 // Session State
 builder.Services.AddScoped<SessionState>();
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddBlazoredModal();
+builder.Services.AddBlazorBootstrap();
+
 
 var app = builder.Build();
 

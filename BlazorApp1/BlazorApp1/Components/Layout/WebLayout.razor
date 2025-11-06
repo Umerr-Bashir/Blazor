@@ -1,15 +1,15 @@
 ﻿@inherits LayoutComponentBase
+@using BlazorApp1.Components.Shared
+
 
 <div class="page">
-    @* <div class="sidebar">
-
-    </div> *@
+   
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js"></script>
+    <ToastContainer />
 
     <main>
-        @* <div class="top-row px-4">
-        </div> *@
-            <NavBar/>
-
+        <NavBar/>
         <article class="content px-4">
             @Body
         </article>
@@ -21,3 +21,9 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
+
+
+
+
+
+

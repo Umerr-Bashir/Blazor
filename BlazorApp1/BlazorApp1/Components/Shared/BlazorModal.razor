@@ -1,0 +1,46 @@
+﻿@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title">@Title</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    @Body
+                </div>
+
+                @* <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="Close">Close</button>
+                    @if (OnSave.HasDelegate)
+                    {
+                        <button class="btn btn-primary" @onclick="Save">Save</button>
+                    }
+                </div> *@
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public RenderFragment? Body { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task Save()
+    {
+        await OnSave.InvokeAsync();
+    }
+}

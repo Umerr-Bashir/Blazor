@@ -1,0 +1,207 @@
+﻿@page "/category"
+@rendermode InteractiveServer
+@layout BlazorApp1.Components.Layout.MainLayout
+@using System.ComponentModel.DataAnnotations
+@using BlazorApp1.Components.Modals
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.DTOs.ModalDTOs
+@using BlazorApp1.Services
+@using BlazorApp1.Services.Components
+@using BlazorBootstrap
+@using ECommerceApp.DTOs.CategoryDTOs
+@inject CategoryService CategoryService
+@inject MyToastService MyToastService
+
+
+
+
+<div class="clearfix mb-2">
+    <h4 class="float-start mb-0">Categories</h4>
+    <button class="btn btn-sm btn-primary float-end" @onclick="OpenModal" data-bs-target="#addressModal">Add <span class="bi bi-plus"></span></button>
+</div>
+
+
+@if (isLoading)
+{
+    <Loader/>
+}
+else
+{
+<div class="card shadow-sm p-4 mb-4">
+
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>IsActive</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(categoryDetails != null && categoryDetails.Data != null && categoryDetails.Data.Any())
+            {
+                @foreach (var category in categoryDetails.Data)
+                {
+                    <tr>
+                        <td>@category.Name</td>
+                        <td>@category.Description</td>
+                        <td>@category.IsActive</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" class="text-center">No Category Found</td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+</div>
+}
+
+
+    @if (isLoading)
+    {
+        <Loader/>
+    }
+    else
+    {
+    <BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
+        <Body>
+        <EditForm Model="@categoryModel" OnValidSubmit="SaveCategory">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Category Name</label>
+                <InputText class="form-control" @bind-Value="categoryModel.Name" />
+                <ValidationMessage For="@(() => categoryModel.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Category Description</label>
+                <InputText class="form-control" @bind-Value="categoryModel.Description" />
+                <ValidationMessage For="@(() => categoryModel.Description)" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
+                    <button class="btn btn-primary">Save</button>
+
+                </div>
+            </EditForm>
+        </Body>
+    </BlazorModal>
+    }
+
+@code {
+    private List<string>? error;
+    private bool loaded = false;
+    private bool isLoading = true;
+    private bool isModalOpen = false;
+    private CategoryCreateDTO categoryModel = new();
+    private ApiResponse<List<CategoryResponseDTO>> categoryDetails = new();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !loaded)
+        {
+            await getCategories();
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // Opens Modal
+    private void OpenModal()
+    {
+        categoryModel = new CategoryCreateDTO();
+        isModalOpen = true;
+    }
+
+    // Modal Closes
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+    // Saves Address
+    private async Task SaveCategory()
+    {
+        isLoading = true;
+        var response = await CategoryService.AddCategoryAsync(categoryModel);
+        if (response.Success == true)
+        {
+            MyToastService.Success("Category Added successfully.");
+            await getCategories();
+            isModalOpen = false;
+            StateHasChanged();
+            isLoading = false;
+
+        }
+        isLoading = false;
+
+    }
+
+    // DeleteAddress
+    private async Task DeleteCategory(int Id)
+    {
+        try
+        {
+            var response = await CategoryService.DeleteCategoryAsync(Id);
+            if (response != null && response.Success)
+            {
+                if (categoryDetails?.Data != null)
+                {
+                    var itemToRemove = categoryDetails.Data.FirstOrDefault(a => a.Id == Id);
+                    if (itemToRemove != null)
+                    {
+                        categoryDetails.Data.Remove(itemToRemove);
+                    }
+                }
+                MyToastService.Error("Category Deleted.");
+                StateHasChanged();
+            }
+            else
+            {
+                error = new List<string>() { "Failed to delete category" };
+            }
+        }
+        catch (Exception ex)
+        {
+            error = new List<string>() { $"Error deleting category: {ex.InnerException}" };
+        }
+
+    }
+
+
+    // Get Address Method
+    private async Task getCategories()
+    {
+        var categoryRes = await CategoryService.GetCategoriesAsync();
+
+        if (categoryRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!categoryRes.Success)
+        {
+            error = categoryRes.Errors;
+        }
+        else
+        {
+            categoryDetails = categoryRes;
+        }
+    }
+
+    
+}

@@ -115,6 +115,11 @@ else
             if(response.Success == true && response.Data != null)
             {
                 await AuthState.SetTokenAsync(response.Data.Token);
+                if (response.Data.Roles == "admin")
+                {
+                    Nav.NavigateTo("/customers");
+                    return;
+                }
                 Nav.NavigateTo("/profile");
             }
             else

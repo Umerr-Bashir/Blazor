@@ -1,0 +1,21 @@
+﻿@using BlazorApp1.Services.Components
+@using BlazorBootstrap
+@inject MyToastService MyToastService
+
+<Toasts Messages="_messages" AutoHide="true" StackLength="5" Placement="ToastsPlacement.TopRight" />
+
+@code {
+    private List<ToastMessage> _messages = new();
+
+    protected override void OnInitialized()
+    {
+        MyToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(ToastMessage message)
+    {
+        _messages.Add(message);
+
+        InvokeAsync(StateHasChanged);
+    }
+}

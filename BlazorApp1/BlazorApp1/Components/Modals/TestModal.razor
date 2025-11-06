@@ -1,0 +1,17 @@
+﻿@using Blazored.Modal
+@using Blazored.Modal.Services
+
+<div class="p-4">
+    <h3>Hello from the modal!</h3>
+    <button class="btn btn-secondary" @onclick="Close">Close</button>
+</div>
+
+@code {
+    [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } = default!;
+
+    private async Task Close()
+    {
+        await ModalInstance.CloseAsync();
+    }
+}
+
