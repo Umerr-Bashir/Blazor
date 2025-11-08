@@ -19,7 +19,7 @@ namespace ECommerceApp.DTOs.ProductDTOs
         public int StockQuantity { get; set; }
 
         [Url(ErrorMessage = "Invalid Image URL.")]
-        public string ImageUrl { get; set; }
+        public IFormFile ImageUrl { get; set; }
 
         [Range(0, 100, ErrorMessage = "Discount Percentage must be between 0% and 100%.")]
         public int DiscountPercentage { get; set; }

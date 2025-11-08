@@ -24,53 +24,79 @@
     </div>
 </div>
 
- 
-@if (productDetails == null)
+@if (error != null)
 {
-    <Loader/>
+        <div class="alert alert-danger">
+            @String.Join(", ", error ?? new List<string> { "Unknown error occurred." })
+        </div>
+}
+
+@if (isLoading)
+{
+    <Loader />
 }
 else
 {
-    <div class="row">
-        @if(productDetails.Data != null && productDetails != null && productDetails.Data.Any())
-        {
-            @foreach (var product in productDetails.Data)
-            {
-                <div class="col-4 mb-4">
-                    <div class="card shadow-sm p-3">
-                        <h5>@product.Name</h5>
-                        <p>Price: <b>@product.Price</b></p>
-                        <p>@product.Description</p>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12 mt-5 text-center">
-                <p>No Products Found</p>
-            </div>
-        }
+    <div class="card shadow-sm p-4 mb-4">
 
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Discount%</th>
+                    <th>Category</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (productDetails.Data != null && productDetails != null && productDetails.Data.Any())
+                {
+                    @foreach (var product in productDetails.Data)
+                    {
+                        
+                            <tr>
+                                <img src="@($"https://localhost:7087{product.ImageUrl}")" alt="@product.Name" height="100" width="130" />
+                                @if (product.IsAvailable)
+                                {
+                                    <td>@product.Name</td>
+                                }
+                                else
+                                {
+                                    <td><s>@product.Name</s></td>
+                                }
+                                <td>@product.Description</td>
+                                <td>@product.Price PKR</td>
+                                <td>@product.DiscountPercentage</td>
+                                <td>@product.CategoryId</td>
+                                <td>@product.StockQuantity</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                                @if(product.IsAvailable)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteProduct(product.Id)">Delete</button>
+                                }else{
+                                <button class="btn btn-sm btn-outline-warning" @onclick="() => UpdateStatus(product.Id)">Undo</button>
+                                }
+                                </td>
+                            </tr>
+                        
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center">No Category Found</td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
     </div>
-    @* <div class="col-md-3 mb-4">
-        <div class="card h-100 shadow-sm">
-            <img src="https://via.placeholder.com/250" class="card-img-top" alt="Product Image" />
 
-            <div class="card-body">
-                <h5 class="card-title">@product.Name</h5>
-                <p class="card-text text-muted">@product.Description</p>
-
-                <h6 class="text-primary fw-bold">$@product.Price</h6>
-            </div>
-
-            <div class="card-footer bg-white border-0">
-                <button class="btn btn-sm btn-primary w-100" @onclick="() => AddToCart(product)">
-                    <i class="bi bi-cart-plus me-1"></i> Add to Cart
-                </button>
-            </div>
-        </div>
-    </div> *@
 
     @if (isLoading)
     {
@@ -80,10 +106,8 @@ else
     {
         <BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
             <Body>
-                <EditForm Model="@productModel" OnValidSubmit="SaveCategory">
+                <EditForm Model="@productModel" OnValidSubmit="SaveProduct">
                     <DataAnnotationsValidator />
-
-                    <InputNumber class="form-control" @bind-Value="productModel.CategoryId" />
 
                     <div class="mb-3">
                         <label class="form-label">Product Name</label>
@@ -116,7 +140,7 @@ else
 
                     <div class="mb-3">
                         <label class="form-label">Category</label>
-                        <InputSelect class="form-control" @bind-Value="productModel.CategoryId" DisplayName="-- Select Category --">
+                        <InputSelect class="form-control" @bind-Value="productModel.CategoryId">
                             <option selected value="">-- Select Category --</option>
                             @if (categoriesList != null && categoriesList.Data != null && categoriesList.Data.Any())
                             {
@@ -132,7 +156,7 @@ else
 
                     <div class="mb-3">
                         <label class="form-label">Product Image</label>
-                        <InputFile class="form-control" @bind-Value="productModel.ImageUrl" Accept=".png,.jpg,.jpeg" />
+                        <InputFile class="form-control" OnChange="OnFileChange" />
                         <ValidationMessage For="@(() => productModel.ImageUrl)" />
                     </div>
 
@@ -155,6 +179,7 @@ else
     private bool isLoading = false;
     private bool isModalOpen = false;
     private ProductCreateDTO productModel = new();
+    private ProductStatusUpdateDTO updateStatus = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -164,6 +189,7 @@ else
             isLoading = true;
             await getProducts();
             isLoading = false;
+            StateHasChanged();
 
         }
     }
@@ -181,22 +207,83 @@ else
     {
         isModalOpen = false;
     }
+    private IBrowserFile uploadedFile;
+    private void OnFileChange(InputFileChangeEventArgs e)
+    {
+        uploadedFile = e.File;
+    }
 
-    // Saves Address
-    private async Task SaveCategory()
+    // Saves Product
+    private async Task SaveProduct()
     {
         isLoading = true;
-        var response = await ProductService.AddProductAsync(productModel);
-        if (response.Success == true)
+
+        var response = await ProductService.AddProductAsync(productModel, uploadedFile);
+        if (response.Success)
         {
-            MyToastService.Success("Product Added successfully.");
+            MyToastService.Success("Product Added Successfully.");
             await getProducts();
             isModalOpen = false;
-            StateHasChanged();
             isLoading = false;
+            StateHasChanged();
+        }
+        else
+        {
+            error = response.Errors;
+            MyToastService.Error(string.Join(", ", response.Errors));
         }
         isLoading = false;
     }
+
+    private async Task DeleteProduct(int Id)
+    {
+        try
+        {
+            var response = await ProductService.DeleteProductAsync(Id);
+            if (response != null && response.Success)
+            {
+                await getProducts();
+                MyToastService.Error("Product Deleted.");
+                StateHasChanged();
+            }
+            else
+            {
+                error = new List<string>() { "Failed to product category" };
+            }
+        }
+        catch (Exception ex)
+        {
+            error = new List<string>() { $"Error deleting product: {ex.InnerException}" };
+        }
+
+    }
+
+    private async Task UpdateStatus(int Id)
+    {
+        updateStatus.ProductId = Id;
+        updateStatus.IsAvailable = true;
+        try
+        {
+            var response = await ProductService.UpdateProductStatusAsync(updateStatus);
+            if (response != null && response.Success)
+            {
+                await getProducts();
+                StateHasChanged();
+            }
+
+            else
+            {
+                error = new List<string>() { "Failed to update product status" };
+            }
+        }
+        catch (Exception ex)
+        {
+            error = new List<string>() { $"Error updating product status: {ex.InnerException}" };
+        }
+
+    }
+    // 
+    
 
     //Get Categories Method
     private ApiResponse<List<CategoryResponseDTO>> categoriesList = new();

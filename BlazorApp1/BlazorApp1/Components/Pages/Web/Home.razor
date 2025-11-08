@@ -1,65 +1,327 @@
 ﻿@page "/"
 @using BlazorApp1.Components.Modals
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using BlazorApp1.Services.Components
+@using ECommerceApp.DTOs.ProductDTOs
+@using ECommerceApp.DTOs.ShoppingCartDTOs
 @layout BlazorApp1.Components.Layout.WebLayout
 @rendermode InteractiveServer
 @inject Blazored.Modal.Services.IModalService Modal
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@inject IJSRuntime JS;
+@inject MyToastService MyToastService
+@inject ProductService ProductService
+@inject CartService CartService
 
-@* <button class="btn btn-success" @onclick="@(() => Modal.Show<TestModal>("Test"))">Test Modal</button> *@
 
 
-<!-- Button -->
-<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-    Add Address
-</button>
+<div class="clearfix mb-5">
+    <h4 class="float-start mb-0"><b>Newly Added Stock - Buy Now And Get Discounts</b></h4>
+    <button class="btn btn-sm btn-primary float-end" @onclick="()=>OpenCartModal()"><span class="bi bi-cart me-2"></span>My Cart</button>
+</div>
 
-<!-- Bootstrap Modal -->
-<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addModalLabel">Add Address</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+@if (alert != null)
+{
+    <div class="alert alert-success">
+        @alert
+    </div>
+}
+@if (error.Any())
+{
+    <div class="alert alert-danger">
+        @error
+    </div>
+}
+@if (isLoading)
+{
+    <Loader/>
+}
+else
+{
+    @if (productDetails.Data != null && productDetails != null && productDetails.Data.Any())
+    {
+        <div class="container">
+            <div class="row">
+                @foreach (var product in productDetails.Data)
+                {
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <img src="@($"https://localhost:7087{product.ImageUrl}")" height="160" width="100" class="card-img-top" alt="@product.Name" />
 
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Street</label>
-                    <input type="text" class="form-control" @bind="street" />
-                </div>
+                            <div class="card-body">
+                                <h5 class="card-title">@product.Name</h5>
+                                <p class="card-text text-muted">@product.Description</p>
 
-                <div class="mb-3">
-                    <label class="form-label">City</label>
-                    <input type="text" class="form-control" @bind="city" />
-                </div>
+                                <h6 class="fw-bold">@product.Price Pkr</h6>
+                                <h6 class="text-danger fw-bold">@product.DiscountPercentage % Discount</h6>
+                                <h6 class="text-primary fw-bold">@product.StockQuantity in Stock</h6>
 
-                <div class="mb-3">
-                    <label class="form-label">Zip</label>
-                    <input type="text" class="form-control" @bind="zip" />
-                </div>
-            </div>
+                                <!-- Quantity selector -->
+                                <div class="d-flex align-items-center mt-2">
+                                    <button class="btn btn-sm btn-outline-secondary me-2"
+                                            @onclick="() => DecreaseQuantity(product)">
+                                        -
+                                    </button>
+                                    <input type="text" class="form-control text-center" style="width:50px;"
+                                           value="@GetQuantity(product)" readonly />
+                                    <button class="btn btn-sm btn-outline-secondary ms-2"
+                                            @onclick="() => IncreaseQuantity(product)">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" @onclick="() => SaveAddress()">Save</button>
+                            <div class="card-footer bg-white border-0">
+                                <button class="btn btn-sm btn-primary w-100" @onclick="() => AddToCart(product)">
+                                    <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
-    </div>
-</div>
+
+    }
+    else
+    { 
+       <h5 class="text-center">No Products Found</h5>
+    }
+}
+
+
+<BlazorModal Title="Your Cart" IsVisible="@isCartOpen" OnClose="CloseCartModal">
+    <Body>
+        @if (isCartLoading)
+        {
+            <Loader/>
+        }
+        else
+        {
+            @if (cartResponse.Data.CartItems.Any())
+        {
+            <table class="table" width="600">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Discount</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                        @if (cartResponse.Data.CartItems != null)
+                    {
+                            @foreach (var cartItem in cartItems)
+                        {
+
+                            <tr>
+                                <td>@cartItem.ProductName</td>
+                                <td>@((int)cartItem.UnitPrice) PKR</td>
+                                <td>@cartItem.Quantity</td>
+                                <td>@((int)cartItem.Discount * cartItem.Quantity) PKR</td>
+                                <td>@((int)cartItem.TotalPrice) PKR</td>
+                                <td>
+                                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveFromCart(cartItem)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between mt-3">
+                    <h5>Total: @totalCartAmount(cartItems) PKR</h5>
+                <button class="btn btn-primary">Checkout</button>
+            </div>
+        }else
+        {
+            <p class="text-center mt-3">Your cart is empty.</p>
+        }
+        }
+    </Body>
+</BlazorModal>
+
+
 
 @code {
     private string street = "";
     private string city = "";
+    private bool loaded = false;
+    private bool isLoading = true;
+    private bool isCartLoading = true;
+    private bool isCartOpen = false;
     private string zip = "";
+    private int userId = 0;
+    private List<string> error = new();
+    private string alert;
+    private ApiResponse<List<ProductResponseDTO>> productDetails = new();
+    private AddToCartDTO addToCart = new();
+    private ApiResponse<CartResponseDTO> cartResponse = new();
+    private List<CartItemResponseDTO> cartItems = new();
+    private RemoveCartItemDTO removeItems = new();
 
-    private void SaveAddress()
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Console.WriteLine($"Saved: {street}, {city}, {zip}");
-        // Hide modal manually (Bootstrap 5)
-        JS.InvokeVoidAsync("bootstrapModalClose", "#addModal");
+        userId = await LocalStorage.GetItemAsync<int>("userId");
+
+        if (firstRender && !loaded)
+        {
+            await getProducts();
+            isLoading = false;
+            StateHasChanged();
+
+        }
     }
 
-    [Inject]
-    IJSRuntime JS { get; set; } = default!;
+
+    private async Task AddToCart(ProductResponseDTO product)
+    {
+        isLoading = true;
+
+        addToCart.Quantity = GetQuantity(product);
+        addToCart.ProductId = product.Id;
+        addToCart.CustomerId = userId;
+
+        if(userId != 0)
+        {
+            var response = await CartService.AddToCartAsync(addToCart);
+            if (response.Success)
+            {
+                MyToastService.Success("Added to Cart.");
+                await getProducts();
+                isLoading = false;
+                StateHasChanged();
+                alert = "Your Product Added to Cart, Open Cart to View";
+            }
+            else
+            {
+                error = response.Errors;
+                MyToastService.Error(string.Join(", ", response.Errors));
+                isLoading = false;
+            }
+        }
+        else
+        {
+            error = new List<string>() { "Customer is Invalid" };
+            isLoading = false;
+
+        }
+    }
+
+
+    //Cart Modal
+    private async Task OpenCartModal()
+    {
+        isCartOpen = true;
+        await getMyCart();
+        StateHasChanged();
+    }
+    private void CloseCartModal() => isCartOpen = false;
+
+    private async Task RemoveFromCart(CartItemResponseDTO item)
+    {
+        var itemId = 
+        removeItems.CartItemId = item.Id;
+        removeItems.CustomerId = userId;
+        var productRes = await CartService.RemoveCartItemAsync(removeItems);
+        if(productRes!=null && productRes.Success)
+        {
+            cartItems.Remove(item);
+            alert = "Item Removed";
+            totalCartAmount(cartItems);
+            StateHasChanged();
+        }
+        else
+        {
+            error = new List<string> { string.Join(", ", new List<string> { "" }) };
+        }
+    }
+    // private decimal CartTotal()
+    // {
+    //     return cartItems.Sum(x => x.Product.Price * x.Quantity);
+    // }
+
+    // Tracks quantities per product
+    private Dictionary<int, int> quantities = new();
+
+    private int GetQuantity(ProductResponseDTO product)
+    {
+        return quantities.ContainsKey(product.Id) ? quantities[product.Id] : 1;
+    }
+
+    private void IncreaseQuantity(ProductResponseDTO product)
+    {
+        if (!quantities.ContainsKey(product.Id))
+            quantities[product.Id] = 1;
+
+        if (quantities[product.Id] < product.StockQuantity)
+            quantities[product.Id]++;
+    }
+
+    private void DecreaseQuantity(ProductResponseDTO product)
+    {
+        if (!quantities.ContainsKey(product.Id))
+            quantities[product.Id] = 1;
+
+        if (quantities[product.Id] > 1)
+            quantities[product.Id]--;
+    }
+
+    //
+    private async Task getMyCart()
+    {
+        isCartLoading = true;
+
+        var productRes = await CartService.GetCartItemAsync(userId);
+
+        if (productRes == null)
+        {
+            isCartLoading = false;
+            error = new List<string> { "No response from server." };
+        }
+        else if (!productRes.Success)
+        {
+            isCartLoading = false;
+            error = productRes.Errors;
+        }
+        else
+        {
+            isCartLoading = false;
+            cartResponse = productRes;
+            cartItems = productRes.Data.CartItems.ToList();
+        }
+    }
+    private decimal totalCartAmount(List<CartItemResponseDTO> items)
+    {
+        var total = items.Sum(x => x.TotalPrice);
+        return (int)total;
+    }
+    // Get Products Method
+    private async Task getProducts()
+    {
+        var productRes = await ProductService.GetAllProducts();
+
+        if (productRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!productRes.Success)
+        {
+            error = productRes.Errors;
+        }
+        else
+        {
+            productDetails = productRes;
+        }
+    }
 }
 
 
