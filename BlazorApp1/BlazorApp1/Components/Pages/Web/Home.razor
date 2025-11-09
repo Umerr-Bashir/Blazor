@@ -447,7 +447,7 @@ else
         {
             MyToastService.Success("Order Created Successfully.");
             isCartOpen = false;
-            Nav.NavigateTo($"/my-order/{response.Data.Id}");
+            Nav.NavigateTo($"/my-order");
             StateHasChanged();
         }
         else

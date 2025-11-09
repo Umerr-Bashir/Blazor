@@ -55,7 +55,7 @@ namespace BlazorApp1.Services
             {
                 return new ApiResponse<ProductResponseDTO>(
                     500,
-                    errors: result.Errors ?? new List<string> { "Unknown Server Error." }
+                    errors: result.Errors ?? new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" }
                 );
             }
             return result;
@@ -71,55 +71,57 @@ namespace BlazorApp1.Services
         public async Task<ApiResponse<List<ProductResponseDTO>>> GetAllProducts()
         {
             var response = await _http.GetAsync($"api/Products/GetAllProducts");
-            if (!response.IsSuccessStatusCode)
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<ProductResponseDTO>>>();
+
+            if (!result.Success)
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     return new ApiResponse<List<ProductResponseDTO>>(404, errors: new List<string> { "Product not found for this user." });
                 }
-                return new ApiResponse<List<ProductResponseDTO>>((int)response.StatusCode, errors: new List<string> { "Request failed." });
+                return new ApiResponse<List<ProductResponseDTO>>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
             }
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<ProductResponseDTO>>>();
             return result ?? new ApiResponse<List<ProductResponseDTO>>(500, errors: new List<string> { "Invalid server response." });
         }
 
         public async Task<ApiResponse<ConfirmationResponseDTO>> DeleteProductAsync(int Id)
         {
             var response = await _http.DeleteAsync($"api/Products/DeleteProduct/{Id}");
-            if (!response.IsSuccessStatusCode) {
-                return new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { "Invalid Server Response" });
-            }
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
-            return result ?? new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { "Error" }); ;
+            if (!result.Success) {
+                return new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
+            }
+            return result ?? new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" }); ;
         }
 
         public async Task<ApiResponse<ConfirmationResponseDTO>> UpdateProductStatusAsync(ProductStatusUpdateDTO product)
         {
             var response = await _http.PutAsJsonAsync($"api/Products/UpdateProductStatus/", product);
-            if (!response.IsSuccessStatusCode) {
-                return new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { "Invalid Server Response." });
-            }
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
+            if (!result.Success) {
+                return new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
+            }
             return result ?? new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { "Error" });
         }
 
         public async Task<ApiResponse<ProductResponseDTO>> GetProductByIdAsync(int Id)
         {
             var response = await _http.GetAsync($"api/Products/GetProductById/{Id}");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ProductResponseDTO>>();
+
             // On 404 or any
-            if (!response.IsSuccessStatusCode)
+            if (!result.Success)
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     return new ApiResponse<ProductResponseDTO>(404, errors: new List<string> { "Product not found for this user." });
                 }
 
-                return new ApiResponse<ProductResponseDTO>((int)response.StatusCode, errors: new List<string> { "Request failed." });
+                return new ApiResponse<ProductResponseDTO>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
             }
 
             // On success
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ProductResponseDTO>>();
-            return result ?? new ApiResponse<ProductResponseDTO>(500, errors: new List<string> { "Invalid server response." });
+            return result ?? new ApiResponse<ProductResponseDTO>(500, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
         }
 
     }
