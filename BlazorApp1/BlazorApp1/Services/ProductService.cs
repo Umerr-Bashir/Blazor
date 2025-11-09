@@ -83,6 +83,21 @@ namespace BlazorApp1.Services
             }
             return result ?? new ApiResponse<List<ProductResponseDTO>>(500, errors: new List<string> { "Invalid server response." });
         }
+        public async Task<ApiResponse<List<ProductResponseDTO>>> GetAllProductsByCategory(int Id)
+        {
+            var response = await _http.GetAsync($"api/Products/GetAllProductsByCategory/{Id}");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<ProductResponseDTO>>>();
+
+            if (!result.Success)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<List<ProductResponseDTO>>(404, errors: new List<string> { "Product not found for this user." });
+                }
+                return new ApiResponse<List<ProductResponseDTO>>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" });
+            }
+            return result ?? new ApiResponse<List<ProductResponseDTO>>(500, errors: new List<string> { "Invalid server response." });
+        }
 
         public async Task<ApiResponse<ConfirmationResponseDTO>> DeleteProductAsync(int Id)
         {

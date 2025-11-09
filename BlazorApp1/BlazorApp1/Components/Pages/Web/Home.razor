@@ -5,6 +5,7 @@
 @using BlazorApp1.Services
 @using BlazorApp1.Services.Components
 @using ECommerceApp.DTOs.AddressesDTOs
+@using ECommerceApp.DTOs.CategoryDTOs
 @using ECommerceApp.DTOs.OrderDTOs
 @using ECommerceApp.DTOs.ProductDTOs
 @using ECommerceApp.DTOs.ShoppingCartDTOs
@@ -12,9 +13,9 @@
 @rendermode InteractiveServer
 @inject Blazored.Modal.Services.IModalService Modal
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
-@inject IJSRuntime JS;
 @inject MyToastService MyToastService
 @inject ProductService ProductService
+@inject CategoryService CategoryService
 @inject CartService CartService
 @inject AddressService AddressService
 @inject OrderService OrderService
@@ -46,7 +47,88 @@ else
 {
     @if (productDetails.Data != null && productDetails != null && productDetails.Data.Any())
     {
-        <div class="container">
+        <div class="container-fluid">
+            <div class="row">
+
+                <!-- LEFT SIDEBAR - CATEGORIES -->
+                <div class="col-md-3">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white fw-bold">
+                            All
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var category in categories.Data)
+                            {
+                                <li class="list-group-item d-flex "
+                                    @onclick="() => getProductsByCategory(category.Id)"
+                                    style="cursor:pointer;">
+                                    @category.Name
+                                    @* <span class="badge bg-secondary rounded-pill">@category.ProductCount</span> *@
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- RIGHT SIDE - PRODUCTS -->
+                <div class="col-md-9">
+                    <div class="row">
+                        @foreach (var product in productDetails.Data)
+                        {
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100 mx-4 m-2 shadow-sm">
+                                    <img src="@($"https://localhost:7087{product.ImageUrl}")"
+                                         height="190"
+                                         width="50"
+                                         class="card-img-top"
+                                         alt="@product.Name" />
+
+                                    <div class="card-body">
+                                        <h5 class="card-title">@product.Name</h5>
+                                        <p class="card-text text-muted">@product.Description</p>
+
+                                        <h6 class="fw-bold">@product.Price PKR</h6>
+                                        <h6 class="text-danger fw-bold">@product.DiscountPercentage % Off</h6>
+                                        <h6 class="text-primary fw-bold">@product.StockQuantity in Stock</h6>
+
+                                        <!-- Quantity -->
+                                        <div class="d-flex align-items-center mt-2">
+                                            <button class="btn btn-sm btn-outline-secondary me-2"
+                                                    @onclick="() => DecreaseQuantity(product)">
+                                                -
+                                            </button>
+
+                                            <input type="text"
+                                                   class="form-control text-center"
+                                                   style="width:50px;"
+                                                   value="@GetQuantity(product)"
+                                                   readonly />
+
+                                            <button class="btn btn-sm btn-outline-secondary ms-2"
+                                                    @onclick="() => IncreaseQuantity(product)">
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-footer bg-white border-0">
+                                        <button class="btn btn-sm btn-primary w-100"
+                                                @onclick="() => AddToCart(product)">
+                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+
+        @* <div class="container">
             <div class="row">
                 @foreach (var product in productDetails.Data)
                 {
@@ -86,7 +168,7 @@ else
                     </div>
                 }
             </div>
-        </div>
+        </div> *@
 
     }
     else
@@ -94,63 +176,6 @@ else
        <h5 class="text-center">No Products Found</h5>
     }
 }
-
-@* 
-<BlazorModal Title="Your Cart" IsVisible="@isCartOpen" OnClose="CloseCartModal">
-    <Body>
-        @if (isCartLoading)
-        {
-            <Loader/>
-        }
-        else
-        {
-            @if (cartResponse.Data.CartItems.Any())
-        {
-            <table class="table" width="600">
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Price</th>
-                        <th>Quantity</th>
-                        <th>Discount</th>
-                        <th>Total</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                        @if (cartResponse.Data.CartItems != null)
-                    {
-                            @foreach (var cartItem in cartItems)
-                        {
-
-                            <tr>
-                                <td>@cartItem.ProductName</td>
-                                <td>@((int)cartItem.UnitPrice) PKR</td>
-                                <td>@cartItem.Quantity</td>
-                                <td>@((int)cartItem.Discount * cartItem.Quantity) PKR</td>
-                                <td>@((int)cartItem.TotalPrice) PKR</td>
-                                <td>
-                                        <button class="btn btn-sm btn-danger" @onclick="() => RemoveFromCart(cartItem)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-
-            <div class="d-flex justify-content-between mt-3">
-                    <h5>Total: @totalCartAmount(cartItems) PKR</h5>
-                <button class="btn btn-primary" @onclick="()=>Checkout()">Checkout</button>
-            </div>
-        }else
-        {
-            <p class="text-center mt-3">Your cart is empty.</p>
-        }
-        }
-    </Body>
-</BlazorModal> *@
 
 <BlazorModal Title="Your Cart" IsVisible="@isCartOpen" OnClose="CloseCartModal">
     <Body>
@@ -264,6 +289,7 @@ else
     private string alert;
     @inject NavigationManager Nav
     private ApiResponse<List<ProductResponseDTO>> productDetails = new();
+    private ApiResponse<List<CategoryResponseDTO>> categories = new();
     private AddToCartDTO addToCart = new();
     private ApiResponse<CartResponseDTO> cartResponse = new();
     private List<CartItemResponseDTO> cartItems = new();
@@ -277,7 +303,12 @@ else
 
         if (firstRender && !loaded)
         {
-            await getProducts();
+            // await getProducts();
+            await getCategories();
+            if (categories?.Data != null && categories.Data.Any())
+            {
+                await getProducts();
+            }
             isLoading = false;
             StateHasChanged();
         }
@@ -323,7 +354,7 @@ else
         }
     }
 
-    //Cart Modal
+    // Cart Modal
     private async Task OpenCartModal()
     {
         isCartOpen = true;
@@ -479,6 +510,46 @@ else
         else
         {
             productDetails = productRes;
+        }
+    }
+    // Get Products Method
+    private async Task<bool> getProductsByCategory(int categoryId)
+    {
+        var productRes = await ProductService.GetAllProductsByCategory(categoryId);
+
+        if (productRes == null)
+        {
+            error = new List<string> { "No response from server." };
+            return false;
+        }
+
+        if (!productRes.Success)
+        {
+            error = productRes.Errors;
+            return false;
+        }
+
+        productDetails = productRes;
+        StateHasChanged();
+        return true;
+    }
+
+    //Get Categories
+    private async Task getCategories()
+    {
+        var addressRes = await CategoryService.GetCategoriesAsync();
+
+        if (addressRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!addressRes.Success)
+        {
+            error = addressRes.Errors;
+        }
+        else
+        {
+            categories = addressRes;
         }
     }
 
