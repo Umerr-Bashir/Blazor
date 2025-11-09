@@ -1,0 +1,208 @@
+﻿@page "/orders"
+@rendermode InteractiveServer
+@layout BlazorApp1.Components.Layout.MainLayout
+
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.CategoryDTOs
+@using ECommerceApp.DTOs.CustomerDTOs
+@using ECommerceApp.DTOs.OrderDTOs
+@using BlazorApp1.Services.Components
+@using ECommerceApp.Models
+@inject ProductService ProductService
+@inject CategoryService CategoryService
+@inject CustomerService CustomerService
+@inject MyToastService MyToastService
+@inject OrderService OrderService
+
+<h3>Orders Details</h3>
+
+@if (isLoading)
+{
+    <Loader />
+}
+else
+{
+    <div class="card shadow-sm p-4 mb-4">
+
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Customer Name</th>
+                    <th>Discount</th>
+                    <th>Shipping</th>
+                    <th>Total</th>
+                    <th>Order Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @if (orderDetails?.Data != null && orderDetails.Data.Count > 0)
+                {
+                    @foreach (var order in orderDetails.Data)
+                    {
+                        <tr>
+                            <td>@(customerNames[order.CustomerId].Data?.FirstName) @(customerNames[order.CustomerId].Data?.LastName)</td>
+                            <td>@((int)order.TotalDiscountAmount) PKR</td>
+                            <td>@((int)order.ShippingCost) PKR</td>
+                            <td>@(order.TotalAmount) PKR</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm dropdown-toggle status-btn @GetStatusClass(order.OrderStatus.ToString())"
+                                            type="button"
+                                            data-bs-toggle="dropdown">
+                                        @order.OrderStatus
+                                    </button>
+
+                                    <ul class="dropdown-menu">
+                                        @foreach (var s in Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>())
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(order.OrderStatus == s ? "active-status" : "")"
+                                                   @onclick="() => UpdateOrderStatus(order, s)">
+                                                    @s
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-2">View</button>
+                            </td>
+
+                            @* <td>@order.OrderStatus</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-2">View</button>
+                                <button class="btn btn-sm btn-outline-danger">Update Status</button>
+                            </td> *@
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">No Orders Found</td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+
+    </div>
+}
+
+<style>
+    .status-btn {
+        min-width: 130px;
+        font-weight: 600;
+    }
+
+    .dropdown-menu .active-status {
+        font-weight: bold;
+        color: #0d6efd !important;
+    }
+
+        .dropdown-menu .active-status::before {
+            content: "✔ ";
+            color: #198754;
+        }
+
+</style>
+@code {
+    private ApiResponse<List<OrderResponseDTO>>? orderDetails;
+    private OrderStatusUpdateDTO? orderUpdate = new();
+    private Dictionary<int, ApiResponse<CustomerResponseDTO>> customerNames = new();
+    private bool isLoading = true;
+    private string? error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await GetOrders();
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task UpdateOrderStatus(OrderResponseDTO order, OrderStatus newStatus)
+    {
+        orderUpdate.OrderId = order.Id;
+        orderUpdate.OrderStatus = newStatus;
+
+        var response = await OrderService.UpdateStatusAsync(orderUpdate);
+        if (response.Success)
+        {
+            var toChange = orderDetails?.Data?.FirstOrDefault(p => p.Id == order.Id);
+
+            if (toChange != null)
+            {
+                toChange.OrderStatus = orderUpdate.OrderStatus;
+            }
+
+            StateHasChanged();
+            MyToastService.Success("Order status updated!");
+        }
+        else
+        {
+            MyToastService.Error(string.Join(", ", response.Errors ?? new List<string> { "Failed to update order." }));
+        }
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "btn-warning",
+            "Processing" => "btn-info",
+            "Shipped" => "btn-primary",
+            "Delivered" => "btn-success",
+            "Cancelled" => "btn-danger",
+            _ => "btn-secondary"
+        };
+    }
+
+
+    private async Task GetOrders()
+    {
+        try
+        {
+            isLoading = true;
+
+            var response = await OrderService.GetAllOrdersAsync();
+
+            if (response != null && response.Success)
+            {
+                orderDetails = response;
+                foreach (var order in orderDetails.Data)
+                {
+                    var name = await CustomerService.GetCustomerById(order.CustomerId);
+                    customerNames[order.CustomerId] = name;
+                }
+            }
+            else
+            {
+                error = string.Join(", ", response?.Errors ?? new List<string> { "Unknown error" });
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+
+
+    }
+}

@@ -1,5 +1,6 @@
 ﻿using BlazorApp1.DTOs;
 using BlazorApp1.Models;
+using EcommerceApp.DTOs;
 using ECommerceApp.DTOs.AddressesDTOs;
 using ECommerceApp.DTOs.CategoryDTOs;
 using ECommerceApp.DTOs.OrderDTOs;
@@ -37,10 +38,42 @@ namespace BlazorApp1.Services
             }
             return result;
         }
-        public async Task<List<OrderResponseDTO>?> GetAllOrders()
+
+        public async Task<ApiResponse<ConfirmationResponseDTO>?> UpdateStatusAsync(OrderStatusUpdateDTO order)
         {
-            var response = await _http.GetFromJsonAsync<ApiResponse<List<OrderResponseDTO>>>($"api/Order/GetAll");
-            return response?.Data;
+            var response = await _http.PutAsJsonAsync($"api/Orders/UpdateOrderStatus", order);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
+
+            if (!result.Success)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<ConfirmationResponseDTO>(404, errors: new List<string> { "Order not found for this user." });
+                }
+
+                return new ApiResponse<ConfirmationResponseDTO>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Request failed." });
+            }
+
+            // On success:
+            return result ?? new ApiResponse<ConfirmationResponseDTO>(500, errors: new List<string> { result?.Errors.FirstOrDefault() ?? "Request failed." });
+        }
+        public async Task<ApiResponse<List<OrderResponseDTO>>?> GetAllOrdersAsync()
+        {
+            var response = await _http.GetAsync($"api/Orders/GetAllOrders");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<OrderResponseDTO>>>();
+
+            if (!result.Success)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<List<OrderResponseDTO>>(404, errors: new List<string> { "Order not found for this user." });
+                }
+
+                return new ApiResponse<List<OrderResponseDTO>>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Request failed." });
+            }
+
+            // On success:
+            return result ?? new ApiResponse<List<OrderResponseDTO>>(500, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Request failed." });
         }
 
         public async Task<ApiResponse<OrderResponseDTO>> GetOrderById(int? Id)

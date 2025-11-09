@@ -17,129 +17,135 @@
 @inject PaymentService PaymentService
 @inject IJSRuntime JS;
 
-<h3><b>My Orders</b></h3>
+@if (isPageLoading)
+{
+    <Loader/>
+}
+else
+{
+    <h3><b>My Orders</b></h3>
 
-@if (alert != null)
-{
-    <div class="alert alert-success">
-        @alert
-    </div>
-}
-@if (errorAlert != null)
-{
-    <div class="alert alert-danger">
-        @errorAlert
-    </div>
-}
-@* Order Details Tickets *@
-<div class="orders-container my-4">
-    @if (orders != null && orders.Any())
+    @if (alert != null)
     {
-        @foreach (var order in orders)
+        <div class="alert alert-success">
+            @alert
+        </div>
+    }
+    @if (errorAlert != null)
+    {
+        <div class="alert alert-danger">
+            @errorAlert
+        </div>
+    }
+    @* Order Details Tickets *@
+    <div class="orders-container my-4">
+        @if (orders != null && orders.Any())
         {
-            <div class="order-card shadow-sm mb-4 p-3">
+            @foreach (var order in orders)
+            {
+                <div class="order-card shadow-sm mb-4 p-3">
 
-                <!-- Order Header -->
-                <div class="order-header mb-2 d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="fw-bold">Order #@order.OrderNumber</h5>
-                        <p class="text-muted small mb-0">Placed on @order.OrderDate.ToString("dd MMM yyyy")</p>
+                    <!-- Order Header -->
+                    <div class="order-header mb-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold">Order #@order.OrderNumber</h5>
+                            <p class="text-muted small mb-0">Placed on @order.OrderDate.ToString("dd MMM yyyy")</p>
+                        </div>
+                        <span class="badge bg-info">@order.OrderStatus</span>
                     </div>
-                    <span class="badge bg-info">@order.OrderStatus</span>
-                </div>
 
-                <hr />
+                    <hr />
 
-                <!-- Billing & Shipping -->
-                <div class="row mb-2">
-                    <div class="col-md-6">
-                        <strong>Billing:</strong>
-                        <p class="small mb-0">
-                            @BillingAddresses[order.Id]?.Data?.PresentAddress <br />
-                            @BillingAddresses[order.Id]?.Data?.City, @BillingAddresses[order.Id]?.Data?.State <br />
-                            @BillingAddresses[order.Id]?.Data?.Country - @BillingAddresses[order.Id]?.Data?.PostalCode
-                        </p>
+                    <!-- Billing & Shipping -->
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Billing:</strong>
+                            <p class="small mb-0">
+                                @BillingAddresses[order.Id]?.Data?.PresentAddress <br />
+                                @BillingAddresses[order.Id]?.Data?.City, @BillingAddresses[order.Id]?.Data?.State <br />
+                                @BillingAddresses[order.Id]?.Data?.Country - @BillingAddresses[order.Id]?.Data?.PostalCode
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Shipping:</strong>
+                            <p class="small mb-0">
+                                @ShippingAddresses[order.Id]?.Data?.PresentAddress <br />
+                                @ShippingAddresses[order.Id]?.Data?.City, @ShippingAddresses[order.Id]?.Data?.State <br />
+                                @ShippingAddresses[order.Id]?.Data?.Country - @ShippingAddresses[order.Id]?.Data?.PostalCode
+                            </p>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <strong>Shipping:</strong>
-                        <p class="small mb-0">
-                            @ShippingAddresses[order.Id]?.Data?.PresentAddress <br />
-                            @ShippingAddresses[order.Id]?.Data?.City, @ShippingAddresses[order.Id]?.Data?.State <br />
-                            @ShippingAddresses[order.Id]?.Data?.Country - @ShippingAddresses[order.Id]?.Data?.PostalCode
-                        </p>
-                    </div>
-                </div>
 
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th width="10">Product</th>
-                            <th>Name</th>
-                            <th class="text-center">Qty</th>
-                            <th class="text-center">Price</th>
-                            <th class="text-center">Discount</th>
-                            <th class="text-end">Total</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach (var item in order.OrderItems)
-                        {
+                    <table class="table table-hover">
+                        <thead>
                             <tr>
-                                <img src="@($"https://localhost:7087{ProductDetails[item.ProductId].Data.ImageUrl}")" height="90" class="card-img-top" alt="@ProductDetails[item.ProductId].Data.Name" />
-                                <td>@ProductDetails[item.ProductId].Data.Name</td>
-                                <td class="text-center">@((int)item.Quantity)</td>
-                                <td class="text-center">@((int)item.UnitPrice) PKR</td>
-                                <td class="text-center">@((int)item.Discount) PKR</td>
-                                <td class="text-end">@((int)item.TotalPrice) PKR</td>
+                                <th width="10">Product</th>
+                                <th>Name</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-center">Price</th>
+                                <th class="text-center">Discount</th>
+                                <th class="text-end">Total</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
 
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Sub Total</th>
-                            <th class="text-center">Discount</th>
-                            <th class="text-center">Shipping</th>
-                            <th class="text-end">Total Amount</th>
-                        </tr>
-                    </thead>
+                        <tbody>
+                            @foreach (var item in order.OrderItems)
+                            {
+                                <tr>
+                                    <img src="@($"https://localhost:7087{ProductDetails[item.ProductId].Data.ImageUrl}")" height="90" class="card-img-top" alt="@ProductDetails[item.ProductId].Data.Name" />
+                                    <td>@ProductDetails[item.ProductId].Data.Name</td>
+                                    <td class="text-center">@((int)item.Quantity)</td>
+                                    <td class="text-center">@((int)item.UnitPrice) PKR</td>
+                                    <td class="text-center">@((int)item.Discount) PKR</td>
+                                    <td class="text-end">@((int)item.TotalPrice) PKR</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
 
-                    <tbody>
-                        <tr>
-                            <td>@order.TotalBaseAmount PKR</td>
-                            <td class="text-center">@((int)order.TotalDiscountAmount) PKR</td>
-                            <td class="text-center">@((int)order.ShippingCost) PKR</td>
-                            <td class="text-end"><b>@order.TotalAmount PKR </b></td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Sub Total</th>
+                                <th class="text-center">Discount</th>
+                                <th class="text-center">Shipping</th>
+                                <th class="text-end">Total Amount</th>
+                            </tr>
+                        </thead>
 
-                @if (order.OrderStatus.ToString().ToLower() == "Pending".ToLower())
-                {
-                    <button class="btn btn-success btn-sm float-end mt-2" @onclick="() => OpenPaymentModal(order)">
-                        <i class="bi bi-credit-card"></i> Pay Now
-                    </button>
-                }
-                else
-                {
-                    <button class="btn btn-primary btn-sm float-end mt-2" @onclick="() => OpenPaymentModal(order)">
-                        <i class="bi"></i> Payment Detail
-                    </button>
-                }
-            </div>
+                        <tbody>
+                            <tr>
+                                <td>@order.TotalBaseAmount PKR</td>
+                                <td class="text-center text-success">@((int)order.TotalDiscountAmount) PKR</td>
+                                <td class="text-center"><span class="text-danger">-@((int)order.ShippingCost)</span> PKR</td>
+                                <td class="text-end"><b>@order.TotalAmount PKR </b></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    @if (order.OrderStatus.ToString().ToLower() == "Pending".ToLower())
+                    {
+                        <button class="btn btn-success btn-sm float-end mt-2" @onclick="() => OpenPaymentModal(order)">
+                            <i class="bi bi-credit-card"></i> Pay Now
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary btn-sm float-end mt-2" @onclick="() => OpenPaymentModal(order)">
+                            <i class="bi"></i> Payment Detail
+                        </button>
+                    }
+                </div>
+            }
         }
-    }
-    else
-    {
-        <p class="text-center text-muted">No orders found.</p>
-    }
-</div>
+        else
+        {
+            <p class="text-center text-muted">No orders found.</p>
+        }
+    </div>
 
-@* Payment Modal *@
-<BlazorModal Title="Make Payment" IsVisible="@isPaymentModalOpen" OnClose="ClosePaymentModal">
+    @* Payment Modal *@
+    <BlazorModal Title="Make Payment" IsVisible="@isPaymentModalOpen" OnClose="ClosePaymentModal">
         <Body>
             <EditForm Model="@paymentRequest" OnValidSubmit="SubmitPayment">
                 <DataAnnotationsValidator />
@@ -159,7 +165,7 @@
                     {
                         <div class="payment-box @(paymentRequest.PaymentMethod == method ? "selected" : "")"
                              @onclick="() => SelectMethod(method)">
-                        <img src="@paymentIcons[method]" class="pay-icon me-2" height="25" width="25" />
+                            <img src="@paymentIcons[method]" class="pay-icon me-2" height="25" width="25" />
                             <span>@method</span>
                         </div>
                     }
@@ -178,33 +184,35 @@
                 }
                 else
                 {
-                <div class="row mb-2">
-                    <div class="col-md-6">
-                        <p>Sub Total</p>
-                        <p>Discount</p>
-                        <p>Shipping</p>
-                        <p>Total Amount</p>
-                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <p>Sub Total</p>
+                            <p>Discount</p>
+                            <p>Shipping</p>
+                            <p>Total Amount</p>
+                        </div>
 
-                    <div class="col-md-6 text-end">
-                        <p>@selectedOrder?.TotalBaseAmount PKR</p>
-                        <p>@selectedOrder?.TotalDiscountAmount PKR</p>
-                        <p>@selectedOrder?.ShippingCost PKR</p>
-                        <p><strong>@selectedOrder?.TotalAmount PKR</strong></p>
+                        <div class="col-md-6 text-end">
+                            <p>@selectedOrder?.TotalBaseAmount PKR</p>
+                            <p>@selectedOrder?.TotalDiscountAmount PKR</p>
+                            <p>@selectedOrder?.ShippingCost PKR</p>
+                            <p><strong>@selectedOrder?.TotalAmount PKR</strong></p>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="ClosePaymentModal">Close</button>
-                    <button class="btn btn-success">Pay Now</button>
-                </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="ClosePaymentModal">Close</button>
+                        <button class="btn btn-success">Pay Now</button>
+                    </div>
                 }
 
             </EditForm>
 
         </Body>
 
-</BlazorModal>
+    </BlazorModal>
 
+
+}
 
 <style>
     .payment-icon {
@@ -285,6 +293,7 @@
     private string? errorAlert;
     private bool loaded = false;
     private bool isLoading = false;
+    private bool isPageLoading = true;
     private int userId;
     private string? authToken;
     private string? alert;
@@ -301,6 +310,7 @@
             if (userId.ToString() != null && authToken != null)
             {
                 await getOrdersByCustomer();
+                isPageLoading = false;
             }
             else
             {
@@ -392,20 +402,6 @@
     {
         paymentRequest.PaymentMethod = method;
     }
-
-    // async Task SubmitPayment()
-    // {
-    //     isLoading = true;
-
-    //     var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
-    //     if (response.Success)
-    //     {
-    //         StateHasChanged();
-    //         isLoading = false;
-    //         alert = "Payment Sucessfull.";
-    //         isPaymentModalOpen = false;
-    //     }
-    // }
     private async Task SubmitPayment()
     {
         if (string.IsNullOrEmpty(paymentRequest.PaymentMethod))
@@ -434,7 +430,7 @@
             }
             else
             {
-                errorAlert = $"{response?.Errors.FirstOrDefault() ?? "Payment failed. Please try again"}";
+                errorAlert = $"{response?.Errors}";
             }
         }
         catch (Exception ex)
