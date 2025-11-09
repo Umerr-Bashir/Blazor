@@ -22,14 +22,14 @@ namespace BlazorApp1.Services
             {
                 return new ApiResponse<PaymentResponseDTO>(
                     500,
-                    errors: new List<string> { "No response from server." }
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" }
                 );
             }
             if (!result.Success)
             {
                 return new ApiResponse<PaymentResponseDTO>(
                     500,
-                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" }
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknown errorr" }
                 );
             }
 

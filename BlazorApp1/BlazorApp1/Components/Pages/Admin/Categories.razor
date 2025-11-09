@@ -21,88 +21,96 @@
     <button class="btn btn-sm btn-primary float-end" @onclick="OpenModal" data-bs-target="#addressModal">Add <span class="bi bi-plus"></span></button>
 </div>
 
-
+@if (errorAlert != null)
+{
+    <div class="alert alert-danger">
+        @errorAlert
+    </div>
+}
 @if (isLoading)
 {
-    <Loader/>
+    <Loader />
 }
 else
 {
-<div class="card shadow-sm p-4 mb-4">
+    <div class="card shadow-sm p-4 mb-4">
 
-    <table class="table table-bordered mt-3">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>IsActive</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if(categoryDetails != null && categoryDetails.Data != null && categoryDetails.Data.Any())
-            {
-                @foreach (var category in categoryDetails.Data)
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>IsActive</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (categoryDetails != null && categoryDetails.Data != null && categoryDetails.Data.Any())
+                {
+                    @foreach (var category in categoryDetails.Data)
+                    {
+                        <tr>
+                            <td>@category.Name</td>
+                            <td>@category.Description</td>
+                            <td>@category.IsActive</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
                 {
                     <tr>
-                        <td>@category.Name</td>
-                        <td>@category.Description</td>
-                        <td>@category.IsActive</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category.Id)">Delete</button>
-                        </td>
+                        <td colspan="7" class="text-center">No Category Found</td>
                     </tr>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="7" class="text-center">No Category Found</td>
-                </tr>
-            }
-        </tbody>
+            </tbody>
 
-    </table>
-</div>
+        </table>
+    </div>
 }
 
+<BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
 
-    @if (isLoading)
-    {
-        <Loader/>
-    }
-    else
-    {
-    <BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
-        <Body>
-        <EditForm Model="@categoryModel" OnValidSubmit="SaveCategory">
+    <Body>
+        @if (isLoading)
+        {
+            <Loader />
+        }
+        else
+        {
+            <EditForm Model="@categoryModel" OnValidSubmit="SaveCategory">
                 <DataAnnotationsValidator />
 
                 <div class="mb-3">
                     <label class="form-label">Category Name</label>
-                <InputText class="form-control" @bind-Value="categoryModel.Name" />
-                <ValidationMessage For="@(() => categoryModel.Name)" />
+                    <InputText class="form-control" @bind-Value="categoryModel.Name" />
+                    <ValidationMessage For="@(() => categoryModel.Name)" />
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Category Description</label>
-                <InputText class="form-control" @bind-Value="categoryModel.Description" />
-                <ValidationMessage For="@(() => categoryModel.Description)" />
+                    <InputText class="form-control" @bind-Value="categoryModel.Description" />
+                    <ValidationMessage For="@(() => categoryModel.Description)" />
                 </div>
 
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
-                    <button class="btn btn-primary">Save</button>
+                    <button class="btn btn-primary" @onclick="() => SaveCategory()">Save</button>
 
                 </div>
             </EditForm>
-        </Body>
-    </BlazorModal>
-    }
+        }
+
+    </Body>
+
+</BlazorModal>
 
 @code {
     private List<string>? error;
+    private string? errorAlert;
     private bool loaded = false;
     private bool isLoading = true;
     private bool isModalOpen = false;
@@ -138,19 +146,32 @@ else
     private async Task SaveCategory()
     {
         isLoading = true;
+        errorAlert = null;
+
         var response = await CategoryService.AddCategoryAsync(categoryModel);
-        if (response.Success == true)
+
+        if (response.Success)
         {
             MyToastService.Success("Category Added successfully.");
             await getCategories();
             isModalOpen = false;
-            StateHasChanged();
-            isLoading = false;
-
         }
-        isLoading = false;
+        else
+        {
+            if(response.Errors.Count > 0)
+            {
+                errorAlert = $"{response.Errors}";
+            }
+            else
+            {
+                errorAlert = "Category with same name already exists.";
+            }
+        }
 
+        isLoading = false;
+        StateHasChanged();
     }
+
 
     // DeleteAddress
     private async Task DeleteCategory(int Id)
@@ -203,5 +224,6 @@ else
         }
     }
 
-    
+
+
 }
