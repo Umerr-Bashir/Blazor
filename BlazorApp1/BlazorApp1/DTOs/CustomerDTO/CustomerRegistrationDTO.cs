@@ -2,14 +2,15 @@
 
 namespace EcommerceApp.DTOs.CustomerDTO
 {
-    
     public class CustomerRegistrationDTO
     {
+        
         [Required(ErrorMessage = "First Name is required.")]
         [MinLength(2, ErrorMessage = "First Name must be at least 2 characters.")]
         [MaxLength(50, ErrorMessage = "First Name cannot exceed 50 characters.")]
         public string FirstName { get; set; }
 
+        
         [Required(ErrorMessage = "Last Name is required.")]
         [MinLength(2, ErrorMessage = "Last Name must be at least 2 characters.")]
         [MaxLength(50, ErrorMessage = "Last Name cannot exceed 50 characters.")]
@@ -19,8 +20,10 @@ namespace EcommerceApp.DTOs.CustomerDTO
         [EmailAddress(ErrorMessage = "Invalid Email Address.")]
         public string Email { get; set; }
 
+       
         [Required(ErrorMessage = "PhoneNumber is required.")]
         [Phone(ErrorMessage = "Invalid Phone Number.")]
+        [StringLength(15, MinimumLength = 12, ErrorMessage = "Phone number must be between 12 and 15 characters.")]
         public string PhoneNumber { get; set; }
 
         [Required(ErrorMessage = "DateOfBirth is required.")]
