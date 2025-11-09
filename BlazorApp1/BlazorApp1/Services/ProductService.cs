@@ -1,6 +1,7 @@
 ﻿using BlazorApp1.DTOs;
 using BlazorApp1.Models;
 using EcommerceApp.DTOs;
+using ECommerceApp.DTOs.AddressesDTOs;
 using ECommerceApp.DTOs.CategoryDTOs;
 using ECommerceApp.DTOs.ProductDTOs;
 using Microsoft.AspNetCore.Components.Forms;
@@ -100,6 +101,25 @@ namespace BlazorApp1.Services
             }
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
             return result ?? new ApiResponse<ConfirmationResponseDTO>(500, new List<string> { "Error" });
+        }
+
+        public async Task<ApiResponse<ProductResponseDTO>> GetProductByIdAsync(int Id)
+        {
+            var response = await _http.GetAsync($"api/Products/GetProductById/{Id}");
+            // On 404 or any
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<ProductResponseDTO>(404, errors: new List<string> { "Product not found for this user." });
+                }
+
+                return new ApiResponse<ProductResponseDTO>((int)response.StatusCode, errors: new List<string> { "Request failed." });
+            }
+
+            // On success
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ProductResponseDTO>>();
+            return result ?? new ApiResponse<ProductResponseDTO>(500, errors: new List<string> { "Invalid server response." });
         }
 
     }

@@ -3,6 +3,7 @@ using BlazorApp1.DTOs.ModalDTOs;
 using EcommerceApp.DTOs.AddressDTO;
 using ECommerceApp.DTOs.AddressesDTOs;
 using ECommerceApp.DTOs.CustomerDTOs;
+using ECommerceApp.DTOs.OrderDTOs;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -77,24 +78,46 @@ namespace BlazorApp1.Services
                 var response = await httpResponse.Content.ReadFromJsonAsync<ApiResponse<List<AddressResponseDTO>>>();
                 return response ?? new ApiResponse<List<AddressResponseDTO>>(500, errors: new List<string> { "Invalid server response." });
             }
-            catch(Exception ex) {
+            catch (Exception ex)
             {
-                Console.WriteLine(ex.InnerException);
+                {
+                    Console.WriteLine(ex.InnerException);
                     return null;
+                }
             }
-    }
-            }
+        }
 
         public async Task<ApiResponse<AddressDeleteDTO>?> DeleteAddressAsync(int Id)
         {
             var httpResponse = await _http.DeleteAsync($"api/Addresses/DeleteAddress/{Id}");
-            if (!httpResponse.IsSuccessStatusCode) { 
-            
+            if (!httpResponse.IsSuccessStatusCode)
+            {
                 return new ApiResponse<AddressDeleteDTO>(500, errors: new List<string> { "Invalid server response." });
             }
             var result = await httpResponse.Content.ReadFromJsonAsync<ApiResponse<AddressDeleteDTO>>();
             return result;
         }
-        
+
+        public async Task<ApiResponse<AddressResponseDTO>> GetAddressByIdAsync(int Id)
+        {
+            var response = await _http.GetAsync($"api/Addresses/GetAddressById/{Id}");
+            // On 404 or any
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<AddressResponseDTO>(404, errors: new List<string> { "Address not found for this user." });
+                }
+
+                return new ApiResponse<AddressResponseDTO>((int)response.StatusCode, errors: new List<string> { "Request failed." });
+            }
+
+            // On success
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<AddressResponseDTO>>();
+            return result ?? new ApiResponse<AddressResponseDTO>(500, errors: new List<string> { "Invalid server response." });
+        }
+
+
+
     }
 }

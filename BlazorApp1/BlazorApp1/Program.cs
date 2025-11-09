@@ -27,6 +27,8 @@ builder.Services.AddScoped<CategoryService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<MyToastService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<PaymentService>();
 
 // Session State
 builder.Services.AddScoped<SessionState>();

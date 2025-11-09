@@ -1,0 +1,226 @@
+﻿
+@page "/my-order/{orderId:int}"
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.AddressesDTOs
+@using ECommerceApp.DTOs.OrderDTOs
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
+@inject NavigationManager Nav
+@inject OrderService OrderService
+@inject AddressService AddressService
+@inject ProductService ProductService
+
+<div class="ticket-container p-4 shadow-lg mx-auto mt-1">
+
+    @if (orderDetails != null && orderDetails.Data != null)
+    {
+    <div class="ticket-header text-center mb-4">
+        <h3 class="fw-bold">Order Summary</h3>
+        <span class="order-number">Order #@orderDetails.Data.OrderNumber</span>
+        <p class="text-muted">Placed on @orderDetails.Data.OrderDate.ToString("dd MMM yyyy")</p>
+    </div>
+
+    <hr />
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5 class="fw-bold">Billing Address</h5>
+            <p class="small">
+                @BillingAddressDetails.Data?.PresentAddress <br />
+                @BillingAddressDetails.Data?.City, @BillingAddressDetails.Data?.State <br />
+                @BillingAddressDetails.Data?.Country - @BillingAddressDetails.Data?.PostalCode
+            </p>
+        </div>
+
+        <div class="col-md-6">
+            <h5 class="fw-bold">Shipping Address</h5>
+            <p class="small">
+                @ShippingAddressDetails.Data?.PresentAddress <br />
+                @ShippingAddressDetails.Data?.City, @ShippingAddressDetails.Data?.State <br />
+                @ShippingAddressDetails.Data?.Country - @ShippingAddressDetails.Data?.PostalCode
+            </p>
+        </div>
+    </div>
+
+    <hr />
+
+    <h5 class="fw-bold mb-2">Items</h5>
+
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th class="text-center">Qty</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Discount</th>
+                <th class="text-end">Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in orderDetails.Data.OrderItems)
+            {
+                <tr>
+                    <td>@item.ProductId</td>
+                    <td class="text-center">@item.Quantity</td>
+                    <td class="text-end">@((int)item.UnitPrice) PKR</td>
+                    <td class="text-end">@((int)item.Discount * item.Quantity) PKR</td>
+                    <td class="text-end">@((int)item.TotalPrice) PKR</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <hr />
+
+    <div class="summary-section mb-3 px-1">
+        <div class="d-flex justify-content-between">
+            <strong>Subtotal:</strong>
+            <span>@orderDetails.Data.TotalBaseAmount PKR</span>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <strong>Discounts:</strong>
+            <span class="text-danger">-@orderDetails.Data.TotalDiscountAmount PKR</span>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <strong>Shipping Cost:</strong>
+            <span>@orderDetails.Data.ShippingCost PKR</span>
+        </div>
+
+        <hr />
+
+        <div class="d-flex justify-content-between fs-5 fw-bold">
+            <span>Total:</span>
+            <span>@orderDetails.Data.TotalAmount PKR</span>
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="text-center">
+        <button class="btn btn-success btn-lg w-100" @onclick="PayOrder">
+            <i class="bi bi-credit-card"></i> Pay Now
+        </button>
+    </div>
+    }
+</div>
+
+
+<style>
+    .ticket-container {
+        max-width: 650px;
+        background: #fff;
+        border-radius: 15px;
+        border: 2px dashed #ccc;
+    }
+
+    .ticket-header .order-number {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #eef2ff;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .summary-section div {
+        margin-bottom: 6px;
+    }
+</style>
+
+
+
+
+@code{
+    [Parameter] public int? orderId { get; set; }
+    private bool loaded = false;
+    private string? authToken;
+    private string? errorAlert;
+    private int? userId;
+    private ApiResponse<OrderResponseDTO>? orderDetails = new();
+    private ApiResponse<AddressResponseDTO>? BillingAddressDetails = new();
+    private ApiResponse<AddressResponseDTO>? ShippingAddressDetails = new();
+
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !loaded)
+        {
+            userId = await LocalStorage.GetItemAsync<int>("userId");
+            if(orderId != null)
+            {
+                await getMyOrders();
+            }
+            else
+            {
+                await getOrdersByCustomer();
+            }
+
+
+            authToken = await LocalStorage.GetItemAsync<string>("authToken");
+            if (authToken == null)
+            {
+                Nav.NavigateTo("/login", true); // true = force reload
+            }
+            StateHasChanged();
+
+
+        }
+    }
+
+    private void PayOrder()
+    {
+        
+    }
+
+    // GetMyOrders
+    private async Task getMyOrders()
+    {
+        var response = await OrderService.GetOrderById(orderId);
+        if (response?.Success == true)
+        {
+            orderDetails = response;
+            var billing = await AddressService.GetAddressByIdAsync(response.Data.BillingAddressId);
+            var shipping = await AddressService.GetAddressByIdAsync(response.Data.ShippingAddressId);
+            if (billing == null || shipping == null)
+            {
+                errorAlert = "Address Missing.";
+            }
+            BillingAddressDetails = billing;
+            ShippingAddressDetails = shipping;
+        }
+        else
+        {
+            errorAlert = "No Orders Found.";
+        }
+    }
+
+    // GetOrderByCustomer
+    private async Task getOrdersByCustomer()
+    {
+        var response = await OrderService.GetOrderById(userId);
+        if (response?.Success == true)
+        {
+            orderDetails = response;
+            var billing = await AddressService.GetAddressByIdAsync(response.Data.BillingAddressId);
+            var shipping = await AddressService.GetAddressByIdAsync(response.Data.ShippingAddressId);
+            if (billing == null || shipping == null)
+            {
+                errorAlert = "Address Missing.";
+            }
+            BillingAddressDetails = billing;
+            ShippingAddressDetails = shipping;
+        }
+        else
+        {
+            errorAlert = "No Orders Found.";
+        }
+    }
+
+}
