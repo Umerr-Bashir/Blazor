@@ -3,6 +3,7 @@
 @using BlazorApp1.DTOs
 @using BlazorApp1.Services
 @using ECommerceApp.DTOs.AddressesDTOs
+@using ECommerceApp.DTOs.CancellationDTOs
 @using ECommerceApp.DTOs.OrderDTOs
 @using ECommerceApp.DTOs.PaymentDTOs
 @using ECommerceApp.DTOs.ProductDTOs
@@ -15,6 +16,7 @@
 @inject AddressService AddressService
 @inject ProductService ProductService
 @inject PaymentService PaymentService
+@inject CancellationService CancellationService
 @inject IJSRuntime JS;
 
 @if (isPageLoading)
@@ -134,6 +136,13 @@ else
                         <button class="btn btn-primary btn-sm float-end mt-2" @onclick="() => PaymentDetails(order.Id)">
                             <i class="bi"></i> Payment Details
                         </button>
+
+                        if (order.OrderStatus.ToString().ToLower() != "Shipped".ToLower())
+                        {
+                            <button class="btn btn-danger btn-sm float-end mt-2 me-2" @onclick="() => OpenCancelModal(order.Id, order.CustomerId)">
+                                <i class="bi"></i> Cancel Order
+                            </button>
+                        }
                     }
                 </div>
             }
@@ -211,10 +220,76 @@ else
 
     </BlazorModal>
 
+    @* Cancel Order *@
+    <BlazorModal Title="Cancel Order" IsVisible="@isCancelModalOpen" OnClose="CloseCancelModal">
+        <Body>
+            <EditForm Model="@cancelRequest" OnValidSubmit="SubmitCancellation">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
+                @* Display Order Info *@
+                <h5 class="fw-bold mb-2 text-center">
+                    Cancel Order #@orders?.FirstOrDefault(o => o.Id == cancelRequest.OrderId)?.OrderNumber
+                </h5>
+
+                <div class="text-center mt-3 mb-4">
+                    <i class="bi bi-x-circle-fill cancel-icon"></i>
+                </div>
+
+                <p class="mb-2 text-center">Please provide a reason for canceling this order:</p>
+
+                <div class="mb-3">
+                    <InputTextArea class="form-control"
+                                   @bind-Value="cancelRequest.Reason"
+                                   placeholder="Enter reason..." rows="4" />
+                </div>
+
+                <hr />
+
+                @* Display Order Summary *@
+                @{
+                    var selectedOrder = orders?.FirstOrDefault(o => o.Id == cancelRequest.OrderId);
+                }
+
+                @if (selectedOrder != null)
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p>Sub Total</p>
+                            <p>Discount</p>
+                            <p>Shipping</p>
+                            <p>Total Amount</p>
+                        </div>
+
+                        <div class="col-md-6 text-end">
+                            <p>@selectedOrder.TotalBaseAmount PKR</p>
+                            <p>@selectedOrder.TotalDiscountAmount PKR</p>
+                            <p>@selectedOrder.ShippingCost PKR</p>
+                            <p><strong>@selectedOrder.TotalAmount PKR</strong></p>
+                        </div>
+                    </div>
+                }
+
+                <div class="modal-footer d-flex justify-content-between">
+                    <button class="btn btn-secondary" @onclick="CloseCancelModal">Close</button>
+                    <button class="btn btn-danger" type="submit">
+                        <i class="bi bi-x-circle me-1"></i> Cancel Order
+                    </button>
+                </div>
+            </EditForm>
+        </Body>
+    </BlazorModal>
 }
 
 <style>
+    .cancel-icon {
+        font-size: 3rem;
+        color: #dc3545;
+    }
+
+    .modal-footer button {
+        min-width: 120px;
+    }
     .payment-icon {
         font-size: 45px;
         color: #28a745; /* green */
@@ -447,7 +522,41 @@ else
             isPaymentModalOpen = false;
             StateHasChanged(); 
         }
+
     }
+
+    // Cancel Modal
+    private bool isCancelModalOpen = false;
+
+    private CancellationRequestDTO cancelRequest = new();
+
+    // [Parameter] public List<OrderResponseDTO>? orders { get; set; }
+
+    private void OpenCancelModal(int orderId, int customerId)
+    {
+        cancelRequest.OrderId = orderId;
+        cancelRequest.CustomerId = customerId;
+        cancelRequest.Reason = "";
+        isCancelModalOpen = true;
+    }
+
+    private void CloseCancelModal() => isCancelModalOpen = false;
+
+    private async Task SubmitCancellation()
+    {
+        // Call your service to cancel order
+        var response = await CancellationService.CancelOrderAsync(cancelRequest);
+        if (response.Success)
+        {
+            isCancelModalOpen = false;
+            StateHasChanged();
+        }
+        else
+        {
+            errorAlert = (string.Join(", ", response.Errors ?? new List<string> { "Failed to cancel order." }));
+        }
+    }
+
 
 
 
