@@ -1,0 +1,172 @@
+﻿@page "/payment-details/{orderId:int}"
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.PaymentDTOs
+
+@inject PaymentService PaymentService
+
+<h3 class="mb-4"><b>Payment Details</b></h3>
+
+@if (isLoading)
+{
+    <div class="text-center mt-4">
+        <div class="spinner-border"></div>
+    </div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (payment != null)
+{
+    <div class="ticket-card shadow-sm">
+        <div class="ticket-header bg-success text-white p-3 rounded-top">
+            <h5 class="mb-0">Payment Ticket</h5>
+        </div>
+
+        <div class="ticket-body p-4">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Payment ID</h6>
+                    <p>@payment.PaymentId</p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Order ID</h6>
+                    <p>@payment.OrderId</p>
+                </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+                <div class="col-md-6 d-flex align-items-center">
+                    <img src="@(paymentIcons[payment.PaymentMethod])" class="pay-icon me-3" height="40" width="40" />
+                    <div>
+                        <h6 class="fw-bold mb-1">Payment Method</h6>
+                        <p>@payment.PaymentMethod</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Transaction ID</h6>
+                    <p><b>@payment.TransactionId</b></p>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Amount</h6>
+                    <p class="text-success h5">@payment.Amount PKR</p>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Payment Date</h6>
+                    <p>@payment.PaymentDate.ToString("dd-MMM-yyyy hh:mm tt")</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="fw-bold">Status</h6>
+                    <span class="badge @GetStatusClass(payment.Status.ToString())">
+                        @payment.Status
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-footer bg-light text-center p-2 rounded-bottom">
+            Thank you for your payment!
+        </div>
+    </div>
+}
+
+<style>
+    .ticket-card {
+        max-width: auto;
+        margin: auto;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        background: #fff;
+    }
+
+    .ticket-header {
+        font-size: 1.1rem;
+    }
+
+    .ticket-body h6 {
+        font-size: 0.95rem;
+        color: #555;
+    }
+
+    .ticket-body p {
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    .ticket-footer {
+        font-size: 0.9rem;
+        color: #333;
+    }
+
+    .pay-icon {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 2px;
+        background: #fff;
+    }
+</style>
+
+@code {
+    [Parameter] public int orderId { get; set; }
+
+    private PaymentResponseDTO? payment;
+    private bool isLoading = true;
+    private string? error;
+
+    Dictionary<string, string> paymentIcons = new()
+    {
+        { "Cash on Delivery", "https://th.bing.com/th/id/OIP.0QTwObaauPQ1UppvH7syUAHaHa?w=199&h=199&c=7&r=0&o=7&cb=ucfimgc2&dpr=1.4&pid=1.7&rm=3" },
+        { "VISA", "https://www.bing.com/th/id/OIP.hZnh7WR7hlMrODsM3FHS9wHaHa?w=183&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" },
+        { "Mastercard", "https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" },
+        { "JazzCash", "https://www.bing.com/th/id/OIP.05InOB5Bm1QISVw_MPAqjgHaHa?w=183&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" },
+        { "Easypaisa", "https://www.bing.com/th/id/OIP.QcS8e3iGamNXsvBeJKd3FQHaHa?w=195&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPayment();
+    }
+
+    private async Task LoadPayment()
+    {
+        isLoading = true;
+
+        var result = await PaymentService.GetPaymentByOrderId(orderId);
+
+        if (result == null)
+        {
+            error = "No response from server.";
+        }
+        else if (!result.Success)
+        {
+            error = string.Join(", ", result.Errors ?? new List<string>());
+        }
+        else
+        {
+            payment = result.Data;
+        }
+
+        isLoading = false;
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning text-dark",
+            "Completed" => "bg-success",
+            "Failed" => "bg-danger",
+            "Refunded" => "bg-secondary",
+            _ => "bg-light text-dark"
+        };
+    }
+}

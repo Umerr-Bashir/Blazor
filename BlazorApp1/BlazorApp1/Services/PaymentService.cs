@@ -35,5 +35,28 @@ namespace BlazorApp1.Services
 
             return result;
         }
+
+        public async Task<ApiResponse<PaymentResponseDTO>> GetPaymentByOrderId(int Id)
+        {
+            var response = await _http.GetAsync($"api/Payments/GetPaymentByOrderId/{Id}");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<PaymentResponseDTO>>();
+
+            if (result == null)
+            {
+                return new ApiResponse<PaymentResponseDTO>(
+                    500,
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknowm errorr" }
+                );
+            }
+            if (!result.Success)
+            {
+                return new ApiResponse<PaymentResponseDTO>(
+                    500,
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknown errorr" }
+                );
+            }
+
+            return result;
+        }
     }
 }
