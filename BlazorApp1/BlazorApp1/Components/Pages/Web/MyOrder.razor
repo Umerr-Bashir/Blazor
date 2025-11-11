@@ -1,15 +1,18 @@
 ﻿@page "/my-order"
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+@inject IJSRuntime JS;
 @using BlazorApp1.Components.Shared
 @using BlazorApp1.DTOs
 @using BlazorApp1.Services
 @using ECommerceApp.DTOs.AddressesDTOs
 @using ECommerceApp.DTOs.CancellationDTOs
+@using ECommerceApp.DTOs.FeedbackDTOs
 @using ECommerceApp.DTOs.OrderDTOs
 @using ECommerceApp.DTOs.PaymentDTOs
 @using ECommerceApp.DTOs.ProductDTOs
 @using ECommerceApp.Models
-@layout BlazorApp1.Components.Layout.WebLayout
-@rendermode InteractiveServer
+@using EcommerceApp.DTOs.PaymentDTO
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage;
 @inject NavigationManager Nav
 @inject OrderService OrderService
@@ -17,11 +20,14 @@
 @inject ProductService ProductService
 @inject PaymentService PaymentService
 @inject CancellationService CancellationService
-@inject IJSRuntime JS;
+@inject FeedbackService FeedbackService
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 
 @if (isPageLoading)
 {
-    <Loader/>
+    <Loader />
 }
 else
 {
@@ -137,7 +143,19 @@ else
                             <i class="bi"></i> Payment Details
                         </button>
 
-                        if (order.OrderStatus.ToString().ToLower() != "Shipped".ToLower())
+                        <button class="btn btn-primary btn-sm float-start mt-2" @onclick="() => OpenFeedbackModal(order)">
+                            <i class="bi"></i> Feedback
+                        </button>
+
+                        @if (!isFeedback)
+                        {
+                            
+                        }
+                        <button class="btn btn-success btn-sm float-start mt-2">
+                            <i class="bi"></i> Feedback Submitted
+                        </button>
+
+                        if (order.OrderStatus.ToString().ToLower() != "Shipped".ToLower() || order.OrderStatus.ToString().ToLower() != "Canceled".ToLower())
                         {
                             <button class="btn btn-danger btn-sm float-end mt-2 me-2" @onclick="() => OpenCancelModal(order.Id, order.CustomerId)">
                                 <i class="bi"></i> Cancel Order
@@ -281,6 +299,83 @@ else
     </BlazorModal>
 }
 
+@* Feedback Modal *@
+@* Cancel Modal *@
+<BlazorModal Title="Feedback" IsVisible="@isFeedbackModalOpen" OnClose="CloseFeedbackModal">
+
+    <Body>
+        @if (isLoading)
+        {
+            <Loader />
+        }
+        else
+        {
+            <EditForm Model="@feedbackRequest" OnValidSubmit="SubmitFeedBack">
+                <DataAnnotationsValidator />
+
+                <!-- PRODUCT DROPDOWN -->
+                <div class="dropdown mb-3">
+                    <button class="btn btn-sm btn-primary dropdown-toggle"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                        @(feedbackRequest.ProductId == 0
+                                            ? "Select Product"
+                                            : ProductDetails[feedbackRequest.ProductId].Data.Name)
+                </button>
+
+                @{
+                        var orderly = orders.FirstOrDefault(p => p.Id == orderId);
+                    }
+
+                    <ul class="dropdown-menu">
+                        @foreach (var item in orderly.OrderItems)
+                        {
+                            <li>
+                                <a class="dropdown-item"
+                                   @onclick="() => SelectProduct(item.ProductId)">
+                                    @ProductDetails[item.ProductId].Data.Name
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <!-- STAR RATING -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Rating</label><br />
+
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span class="star"
+                              style="font-size: 28px; cursor: pointer; color:@(feedbackRequest.Rating >= i ? "#FFD700" : "#ccc")"
+                              @onclick="() => SelectRating(i)">
+                            &#9733;
+                        </span>
+                    }
+                </div>
+
+                <!-- COMMENT -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Comment</label>
+                    <textarea class="form-control"
+                              rows="4"
+                              @bind="feedbackRequest.Comment">
+                </textarea>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <button type="submit" class="btn btn-success w-100" @onclick="SubmitFeedBack">
+                    Submit Feedback
+                </button>
+
+            </EditForm>
+        }
+
+    </Body>
+
+</BlazorModal>
+
 <style>
     .cancel-icon {
         font-size: 3rem;
@@ -290,6 +385,7 @@ else
     .modal-footer button {
         min-width: 120px;
     }
+
     .payment-icon {
         font-size: 45px;
         color: #28a745; /* green */
@@ -368,8 +464,10 @@ else
     private string? errorAlert;
     private bool loaded = false;
     private bool isLoading = false;
+    private bool isFeedback = false;
     private bool isPageLoading = true;
     private int userId;
+    private int orderId;
     private string? authToken;
     private string? alert;
 
@@ -395,7 +493,10 @@ else
         }
     }
 
-
+    void SelectRating(int rating)
+    {
+        feedbackRequest.Rating = rating;
+    }
     private async Task getOrdersByCustomer()
     {
         var response = await OrderService.GetOrderByCustomerId(userId); // Now returns list
@@ -438,8 +539,11 @@ else
 
 
     bool isPaymentModalOpen = false;
+    bool isFeedbackModalOpen = false;
 
     private PaymentRequestDTO paymentRequest = new();
+    private StripeCheckoutDTO stripeCheckoutRequest = new();
+    private FeedbackCreateDTO feedbackRequest = new();
 
     List<string> paymentMethods = new()
     {
@@ -447,7 +551,8 @@ else
         "VISA",
         "Mastercard",
         "JazzCash",
-        "Easypaisa"
+        "Easypaisa",
+        "Stripe"
     };
     Dictionary<string, string> paymentIcons = new()
     {
@@ -455,7 +560,8 @@ else
         { "VISA", "https://www.bing.com/th/id/OIP.hZnh7WR7hlMrODsM3FHS9wHaHa?w=183&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" },
         { "Mastercard", "https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" },
         { "JazzCash", "https://www.bing.com/th/id/OIP.05InOB5Bm1QISVw_MPAqjgHaHa?w=183&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" },
-        { "Easypaisa", "https://www.bing.com/th/id/OIP.QcS8e3iGamNXsvBeJKd3FQHaHa?w=195&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" }
+        { "Easypaisa", "https://www.bing.com/th/id/OIP.QcS8e3iGamNXsvBeJKd3FQHaHa?w=195&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimgc1&dpr=1.4&pid=3.1&rm=2" },
+        { "Stripe", "https://th.bing.com/th/id/OIP.1CF86fA0oXP1g6g5MdcGygHaDc?w=296&h=150&c=6&o=7&cb=ucfimgc2&dpr=1.3&pid=1.7&rm=3" }
     };
 
 
@@ -465,12 +571,32 @@ else
         paymentRequest.OrderId = order.Id;
         paymentRequest.Amount = order.TotalAmount;
 
+        //Stripe
+        var productId = order.OrderItems.First().ProductId;
+
+        stripeCheckoutRequest.ProductName = @ProductDetails[productId].Data.Name;
+        stripeCheckoutRequest.Quantity = order.OrderItems.First().Quantity;
+        stripeCheckoutRequest.UnitPrice = order.OrderItems.First().UnitPrice;
+        stripeCheckoutRequest.BaseUrl = Nav.BaseUri.TrimEnd('/');
+
+
         isPaymentModalOpen = true;
     }
 
     void ClosePaymentModal()
     {
         isPaymentModalOpen = false;
+    }
+    private void OpenFeedbackModal(OrderResponseDTO order)
+    {
+        feedbackRequest.CustomerId = userId;
+        // feedbackRequest.ProductId = order.OrderItems.;
+        orderId = order.Id;
+        isFeedbackModalOpen = true;
+    }
+    void CloseFeedbackModal()
+    {
+        isFeedbackModalOpen = false;
     }
 
     void PaymentDetails(int Id)
@@ -480,6 +606,31 @@ else
     void SelectMethod(string method)
     {
         paymentRequest.PaymentMethod = method;
+    }
+
+    // Submit Feedback
+    async Task SubmitFeedBack()
+    {
+        isLoading = true;
+
+        var response = await FeedbackService.RequestFeedback(feedbackRequest);
+        if (response.Success)
+        {
+            isLoading = false;
+            isFeedback = true;
+            StateHasChanged();
+        }
+        else
+        {
+            errorAlert = $"{response.Errors}";
+        }
+
+    }
+
+    void SelectProduct(int productId)
+    {
+        feedbackRequest.ProductId = productId;
+        StateHasChanged();
     }
     private async Task SubmitPayment()
     {
@@ -495,6 +646,11 @@ else
             isLoading = true;
             alert = null;
             StateHasChanged();
+
+            if(paymentMethods.ToString() == "Stripe")
+            {
+                var result = await PaymentService.CreateCheckoutSession(stripeCheckoutRequest);
+            }
 
             var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
 
@@ -520,7 +676,7 @@ else
         {
             isLoading = false;
             isPaymentModalOpen = false;
-            StateHasChanged(); 
+            StateHasChanged();
         }
 
     }
@@ -544,7 +700,6 @@ else
 
     private async Task SubmitCancellation()
     {
-        // Call your service to cancel order
         var response = await CancellationService.CancelOrderAsync(cancelRequest);
         if (response.Success)
         {

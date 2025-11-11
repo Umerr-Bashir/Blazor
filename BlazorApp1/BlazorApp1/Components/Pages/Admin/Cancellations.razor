@@ -1,0 +1,261 @@
+﻿@page "/cancellations"
+@rendermode InteractiveServer
+@layout BlazorApp1.Components.Layout.MainLayout
+
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.CancellationDTOs
+@using ECommerceApp.DTOs.CategoryDTOs
+@using ECommerceApp.DTOs.CustomerDTOs
+@using ECommerceApp.DTOs.OrderDTOs
+@using BlazorApp1.Services.Components
+@using ECommerceApp.Models
+@inject ProductService ProductService
+@inject CategoryService CategoryService
+@inject CustomerService CustomerService
+@inject MyToastService MyToastService
+@inject CancellationService CancellationService
+@inject OrderService OrderService
+
+<h3><b>Cancellations</b></h3>
+
+@if (isLoading)
+{
+    <Loader />
+}
+else
+{
+    <div class="card shadow-sm p-4 mb-4">
+
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>OrderId</th>
+                    <th>Reason</th>
+                    <th>Order Amount</th>
+                    <th>Requested At</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @if (cancelDetails?.Data != null && cancelDetails.Data.Count > 0)
+                {
+                    @foreach (var cancel in cancelDetails.Data)
+                    {
+                        <tr>
+                            <td>@(cancel.OrderId)</td>
+                            <td>@(cancel.Reason)</td>
+                            <td>@(cancel.OrderAmount) PKR</td>
+                            <td>@(cancel.RequestedAt)</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm dropdown-toggle status-btn @GetStatusClass(cancel.Status.ToString())"
+                                            type="button"
+                                            data-bs-toggle="dropdown">
+                                        @cancel.Status
+                                    </button>
+
+                                    <ul class="dropdown-menu">
+                                        @foreach (var s in Enum.GetValues(typeof(CancellationStatus)).Cast<CancellationStatus>())
+                                        {
+                                            <li>
+                                                <a class="dropdown-item @(cancel.Status == s ? "active-status" : "")"
+                                                   @onclick="() => OpenUpdateModal(cancel, s)">
+                                                    @s
+                                                </a>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+
+                            
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center">No Orders Found</td>
+                    </tr>
+                }
+
+            </tbody>
+        </table>
+
+    </div>
+}
+
+@* Cancel Modal *@
+<BlazorModal Title="Cancellation" IsVisible="@isUpdateModalOpen" OnClose="CloseUpdateModal">
+
+    <Body>
+        @if (isLoading)
+        {
+            <Loader />
+        }
+        else
+        {
+            <EditForm Model="@cancelUpdate" OnValidSubmit="UpdateCancelStatus">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Cancellations Charges</label>
+                    <InputNumber class="form-control" @bind-Value="cancelUpdate.CancellationCharges" />
+                    <ValidationMessage For="@(() => cancelUpdate.CancellationCharges)" />
+                </div>
+
+                <div class="mb-3">
+                    <InputTextArea class="form-control"
+                                   @bind-Value="cancelUpdate.Remarks"
+                                   placeholder="Enter remarks..." rows="4" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => CloseUpdateModal()">Close</button>
+                    <button class="btn btn-primary" @onclick="() => UpdateCancelStatus()">Save</button>
+
+                </div>
+            </EditForm>
+        }
+
+    </Body>
+
+</BlazorModal>
+
+
+
+<style>
+    .status-btn {
+        min-width: 130px;
+        font-weight: 600;
+    }
+
+    .dropdown-menu .active-status {
+        font-weight: bold;
+        color: #0d6efd !important;
+    }
+        .dropdown-menu .active-status::before {
+            content: "✔ ";
+            color: #198754;
+        }
+
+</style>
+@code {
+    private ApiResponse<List<CancellationResponseDTO>>? cancelDetails;
+    private CancellationStatusUpdateDTO cancelUpdate = new();
+    private Dictionary<int, ApiResponse<CustomerResponseDTO>> customerNames = new();
+    private bool isLoading = true;
+    private string? error;
+    private string? alert;
+    private CancellationStatus cancelStatus;
+    bool isUpdateModalOpen = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await GetCancellations();
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "btn-warning",
+            "Processing" => "btn-info",
+            "Shipped" => "btn-primary",
+            "Delivered" => "btn-success",
+            "Cancelled" => "btn-danger",
+            _ => "btn-secondary"
+        };
+    }
+
+    void OpenUpdateModal(CancellationResponseDTO cancel, CancellationStatus status)
+    {
+        cancelUpdate.CancellationId = cancel.Id;
+        cancelUpdate.Status = status;
+        cancelUpdate.ProcessedBy = 0;
+
+        isUpdateModalOpen = true;
+    }
+    void CloseUpdateModal()
+    {
+        isUpdateModalOpen = false;
+    }
+
+    private async Task UpdateCancelStatus()
+    {
+        try
+        {
+            isLoading = true;
+            error = null;
+            StateHasChanged();
+
+            var response = await CancellationService.UpdateCancellationStatus(cancelUpdate);
+
+            if (response?.Success == true)
+            {
+                alert = "Cancel Successful!";
+                // var order = cancel.FirstOrDefault(o => o.Id == paymentRequest.OrderId);
+                // if (order != null)
+                // {
+                //     order.OrderStatus = OrderStatus.Processing;
+                // }
+            }
+            else
+            {
+                error = $"{response?.Errors}";
+            }
+        }
+        catch (Exception ex)
+        {
+            alert = $"Payment error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            isUpdateModalOpen = false;
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task GetCancellations()
+    {
+        try
+        {
+            isLoading = true;
+
+            var response = await CancellationService.GetAllCancellationsAsync();
+
+            if (response != null && response.Success)
+            {
+                cancelDetails = response;
+            }
+            else
+            {
+                error = string.Join(", ", response?.Errors ?? new List<string> { "Unknown error" });
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+
+
+    }
+}

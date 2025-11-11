@@ -1,4 +1,5 @@
 ﻿using BlazorApp1.DTOs;
+using EcommerceApp.DTOs;
 using ECommerceApp.DTOs.CancellationDTOs;
 using ECommerceApp.DTOs.PaymentDTOs;
 
@@ -35,5 +36,51 @@ namespace BlazorApp1.Services
 
             return result;
         }
+        public async Task<ApiResponse<List<CancellationResponseDTO>>> GetAllCancellationsAsync()
+        {
+            var response = await _http.GetAsync($"api/Cancellations/GetAllCancellations");
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<CancellationResponseDTO>>>();
+
+            if (result == null)
+            {
+                return new ApiResponse<List<CancellationResponseDTO>>(
+                    500,
+                    errors: new List<string> { result?.Errors.FirstOrDefault() ?? "No Cancellations Found." }
+                );
+            }
+            if (!result.Success)
+            {
+                return new ApiResponse<List<CancellationResponseDTO>>(
+                    500,
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknown error." }
+                );
+            }
+
+            return result;
+        }
+
+        public async Task<ApiResponse<ConfirmationResponseDTO>> UpdateCancellationStatus(CancellationStatusUpdateDTO cancel)
+        {
+            var response = await _http.PutAsJsonAsync($"api/Cancellations/UpdateCancellationStatus",cancel);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
+
+            if (result == null)
+            {
+                return new ApiResponse<ConfirmationResponseDTO>(
+                    500,
+                    errors: new List<string> { result?.Errors.FirstOrDefault() ?? "No Cancellations Found." }
+                );
+            }
+            if (!result.Success)
+            {
+                return new ApiResponse<ConfirmationResponseDTO>(
+                    500,
+                    errors: new List<string> { result.Errors.FirstOrDefault() ?? "Unknown error." }
+                );
+            }
+
+            return result;
+        }
+
     }
 }

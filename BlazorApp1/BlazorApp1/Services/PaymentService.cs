@@ -1,4 +1,5 @@
 ﻿using BlazorApp1.DTOs;
+using EcommerceApp.DTOs.PaymentDTO;
 using ECommerceApp.DTOs.OrderDTOs;
 using ECommerceApp.DTOs.PaymentDTOs;
 
@@ -57,6 +58,17 @@ namespace BlazorApp1.Services
             }
 
             return result;
+        }
+
+        public async Task<string?> CreateCheckoutSession(StripeCheckoutDTO req)
+        {
+            var response = await _http.PostAsJsonAsync("api/Payments/StripeCheckout", req);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+            return body["url"];
         }
     }
 }

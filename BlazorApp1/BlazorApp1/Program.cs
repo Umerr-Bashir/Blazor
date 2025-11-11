@@ -30,6 +30,7 @@ builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<CancellationService>();
+builder.Services.AddScoped<FeedbackService>();
 
 // Session State
 builder.Services.AddScoped<SessionState>();

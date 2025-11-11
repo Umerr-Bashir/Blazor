@@ -22,10 +22,19 @@
 
 
 
-<div class="clearfix mb-5">
-    <h4 class="float-start mb-0"><b>Newly Added Stock - Buy Now And Get Discounts</b></h4>
-    <button class="btn btn-sm btn-primary float-end" @onclick="()=>OpenCartModal()"><span class="bi bi-cart me-2"></span>My Cart</button>
+<div class="d-flex justify-content-between align-items-center mb-4 px-1">
+    <h3 class="fw-bold text-dark">
+        Newly Added Stock
+        <span class="text-primary">• Discounts Available</span>
+    </h3>
+
+    <button class="btn btn-primary shadow-sm rounded-pill px-3"
+            @onclick="() => OpenCartModal()">
+        <i class="bi bi-cart me-2"></i>
+        My Cart
+    </button>
 </div>
+
 
 @if (alert != null)
 {
@@ -52,76 +61,85 @@ else
 
                 <!-- LEFT SIDEBAR - CATEGORIES -->
                 <div class="col-md-3">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-primary text-white fw-bold">
-                            All
+                    <div class="card shadow-sm border-0 rounded-3 sticky-top" style="top: 90px;">
+                        <div class="card-header bg-gradient text-black fw-bold rounded-top-3"
+                             style="background: linear-gradient(45deg, #4e73df, #224abe);">
+                            Categories
                         </div>
+
                         <ul class="list-group list-group-flush">
                             @foreach (var category in categories.Data)
                             {
-                                <li class="list-group-item d-flex "
-                                    @onclick="() => getProductsByCategory(category.Id)"
-                                    style="cursor:pointer;">
-                                    @category.Name
-                                    @* <span class="badge bg-secondary rounded-pill">@category.ProductCount</span> *@
+                                <li class="list-group-item category-item"
+                                    @onclick="() => getProductsByCategory(category.Id)">
+                                    <span>@category.Name</span>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
                                 </li>
                             }
                         </ul>
                     </div>
                 </div>
 
+
                 <!-- RIGHT SIDE - PRODUCTS -->
                 <div class="col-md-9">
-                    <div class="row">
+                    <div class="row g-4">
                         @foreach (var product in productDetails.Data)
                         {
-                            <div class="col-md-6 mb-4">
-                                <div class="card h-100 mx-4 m-2 shadow-sm">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card product-card shadow-sm border-0 rounded-4">
+
                                     <img src="@($"https://localhost:7087{product.ImageUrl}")"
-                                         height="190"
-                                         width="50"
-                                         class="card-img-top"
-                                         alt="@product.Name" />
+                                         class="product-image rounded-top-4" alt="@product.Name" height="320" width="340" />
 
                                     <div class="card-body">
-                                        <h5 class="card-title">@product.Name</h5>
-                                        <p class="card-text text-muted">@product.Description</p>
+                                        <h5 class="fw-bold text-dark">@product.Name</h5>
+                                        <p class="text-muted small">@product.Description</p>
 
-                                        <h6 class="fw-bold">@product.Price PKR</h6>
-                                        <h6 class="text-danger fw-bold">@product.DiscountPercentage % Off</h6>
-                                        <h6 class="text-primary fw-bold">@product.StockQuantity in Stock</h6>
+                                        <div class="mt-2">
+                                            <span class="fw-bold text-dark">@product.Price PKR</span>
+                                            <span class="text-danger fw-bold ms-2">
+                                                @product.DiscountPercentage% OFF
+                                            </span>
+                                        </div>
 
-                                        <!-- Quantity -->
-                                        <div class="d-flex align-items-center mt-2">
-                                            <button class="btn btn-sm btn-outline-secondary me-2"
+                                        <p class="text-success small mb-0">
+                                            @product.StockQuantity in stock
+                                        </p>
+
+                                        <!-- Qty -->
+                                        <div class="d-flex align-items-center mt-3">
+                                            <button class="btn btn-outline-secondary btn-sm rounded-circle"
                                                     @onclick="() => DecreaseQuantity(product)">
-                                                -
+                                                <i class="bi bi-dash"></i>
                                             </button>
 
-                                            <input type="text"
-                                                   class="form-control text-center"
-                                                   style="width:50px;"
+                                            <input class="form-control text-center mx-2"
+                                                   style="width: 55px;"
                                                    value="@GetQuantity(product)"
                                                    readonly />
 
-                                            <button class="btn btn-sm btn-outline-secondary ms-2"
+                                            <button class="btn btn-outline-secondary btn-sm rounded-circle"
                                                     @onclick="() => IncreaseQuantity(product)">
-                                                +
+                                                <i class="bi bi-plus"></i>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div class="card-footer bg-white border-0">
-                                        <button class="btn btn-sm btn-primary w-100"
+                                    <div class="p-3">
+                                        <button class="btn btn-primary w-100 rounded-pill shadow-sm"
                                                 @onclick="() => AddToCart(product)">
-                                            <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                                            <i class="bi bi-cart-plus me-1"></i>
+                                            Add to Cart
                                         </button>
                                     </div>
+
                                 </div>
                             </div>
                         }
                     </div>
                 </div>
+
 
             </div>
         </div>
@@ -179,100 +197,141 @@ else
 
 <BlazorModal Title="Your Cart" IsVisible="@isCartOpen" OnClose="CloseCartModal">
     <Body>
+
         @if (isCartLoading)
         {
             <Loader />
         }
         else
         {
-            @if (cartResponse.Data.CartItems.Any() && cartResponse.Data.CartItems != null)
+            @if (cartResponse.Data.CartItems.Any())
             {
-                <table class="table" width="600">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Price</th>
-                            <th>Quantity</th>
-                            <th>Discount</th>
-                            <th>Total</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var cartItem in cartItems)
-                        {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td>@cartItem.ProductName</td>
-                                <td>@((int)cartItem.UnitPrice) PKR</td>
-                                <td>@cartItem.Quantity</td>
-                                <td>@((int)cartItem.Discount * cartItem.Quantity) PKR</td>
-                                <td>@((int)cartItem.TotalPrice) PKR</td>
-                                <td>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => RemoveFromCart(cartItem)">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
+                                <th>Product</th>
+                                <th>Unit Price</th>
+                                <th>Qty</th>
+                                <th>Discount</th>
+                                <th>Total</th>
+                                <th></th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cartItems)
+                            {
+                                <tr>
+                                    <td>@item.ProductName</td>
+                                    <td>@((int)item.UnitPrice) PKR</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@((int)item.Discount * item.Quantity) PKR</td>
+                                    <td class="fw-bold">@((int)item.TotalPrice) PKR</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => RemoveFromCart(item)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
                 <!-- Billing & Shipping Address Selection -->
-                @if (billingAddresses != null && billingAddresses.Data != null && billingAddresses.Data.Any())
-                {
-                    <div class="mt-4 border-bottom pb-5">
-                        <h6><b>Select Billing Address:</b></h6>
-                        @foreach (var address in billingAddresses.Data)
-                        {
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio"
-                                name="billingAddress"
-                                value="@address.Id"
-                                @onchange="() => SelectedBillingAddressId = address.Id"
-                                checked="@(SelectedBillingAddressId == address.Id)" />
-                                <label class="form-check-label">
-                                    @address.PermanentAddress - @address.City, @address.State, @address.Country
-                                </label>
-                            </div>
-                        }
+                @if (billingAddresses != null && billingAddresses.Data != null && billingAddresses.Data.Any() && cartResponse.Data.CartItems.Any())
+{
+    <div class="mt-4 border-bottom pb-5">
+        <h6><b>Select Billing Address:</b></h6>
+        @foreach (var address in billingAddresses.Data)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                name="billingAddress"
+                value="@address.Id"
+                @onchange="() => SelectedBillingAddressId = address.Id"
+                checked="@(SelectedBillingAddressId == address.Id)" />
+                <label class="form-check-label">
+                    @address.PermanentAddress - @address.City, @address.State, @address.Country
+                </label>
+            </div>
+        }
 
-                        <h6 class="mt-3"><b>Select Shipping Address:</b></h6>
-                        @foreach (var address in billingAddresses.Data)
-                        {
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio"
-                                name="shippingAddress"
-                                value="@address.Id"
-                                @onchange="() => SelectedShippingAddressId = address.Id"
-                                checked="@(SelectedShippingAddressId == address.Id)" />
-                                <label class="form-check-label">
-                                    @address.PermanentAddress - @address.City, @address.State, @address.Country
-                                </label>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <p class="text-center mt-5">No Added Addresses, Add Now.</p>
-                    <div class="text-center">
-                        <button class="btn btn-info text-center mt-2" @onclick="() => AddAddressNow()">Add Address</button>
-                    </div>
-                }
+        <h6 class="mt-3"><b>Select Shipping Address:</b></h6>
+        @foreach (var address in billingAddresses.Data)
+        {
+            <div class="form-check">
+                <input class="form-check-input" type="radio"
+                name="shippingAddress"
+                value="@address.Id"
+                @onchange="() => SelectedShippingAddressId = address.Id"
+                checked="@(SelectedShippingAddressId == address.Id)" />
+                <label class="form-check-label">
+                    @address.PermanentAddress - @address.City, @address.State, @address.Country
+                </label>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <p class="text-center mt-5">No Added Addresses, Add Now.</p>
+    <div class="text-center">
+        <button class="btn btn-info text-center mt-2" @onclick="() => AddAddressNow()">Add Address</button>
+    </div>
+}
 
-                <div class="d-flex justify-content-between mt-3">
-                    <h5 class="">Total: @totalCartAmount(cartItems) PKR</h5>
-                    <button class="btn btn-primary" @onclick="() => Checkout(cartItems)">Checkout</button>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <h4 class="fw-bold">Total: @totalCartAmount(cartItems) PKR</h4>
+                    <button class="btn btn-success px-4 rounded-pill"
+                            @onclick="() => Checkout(cartItems)">
+                        Checkout
+                    </button>
                 </div>
             }
             else
             {
-                <p class="text-center mt-3">Your cart is empty.</p>
+                <p class="text-center text-muted mt-5">
+                    Your cart is empty.
+                </p>
             }
         }
+
     </Body>
 </BlazorModal>
 
+
+<style>
+    .category-item {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 16px !important;
+        border-left: 3px solid transparent;
+    }
+
+        .category-item:hover {
+            background-color: #f8f9fc;
+            border-left: 3px solid #4e73df;
+            font-weight: 600;
+        }
+
+    .product-card {
+        transition: 0.25s ease;
+    }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+        }
+
+    .product-image {
+        height: 220px;
+        object-fit: cover;
+        width: 100%;
+    }
+</style>
 
 
 
@@ -381,6 +440,7 @@ else
         {
             error = new List<string> { string.Join(", ", new List<string> { "" }) };
         }
+        StateHasChanged();
     }
 
     private Dictionary<int, int> quantities = new();
