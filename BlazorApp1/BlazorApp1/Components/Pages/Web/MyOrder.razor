@@ -576,8 +576,12 @@ else
 
         stripeCheckoutRequest.ProductName = @ProductDetails[productId].Data.Name;
         stripeCheckoutRequest.Quantity = order.OrderItems.First().Quantity;
-        stripeCheckoutRequest.UnitPrice = order.OrderItems.First().UnitPrice;
+        stripeCheckoutRequest.UnitPrice = (long)order.OrderItems.First().UnitPrice;
         stripeCheckoutRequest.BaseUrl = Nav.BaseUri.TrimEnd('/');
+        stripeCheckoutRequest.Currency = "PKR";
+        stripeCheckoutRequest.CustomerId = order.CustomerId;
+        stripeCheckoutRequest.OrderId = order.Id;
+
 
 
         isPaymentModalOpen = true;
@@ -647,26 +651,42 @@ else
             alert = null;
             StateHasChanged();
 
-            if(paymentMethods.ToString() == "Stripe")
+            if (paymentRequest.PaymentMethod == "Stripe")
             {
+                stripeCheckoutRequest.PaymentMethod = paymentRequest.PaymentMethod;
                 var result = await PaymentService.CreateCheckoutSession(stripeCheckoutRequest);
-            }
 
-            var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
-
-            if (response?.Success == true)
-            {
-                alert = "Payment successful!";
-                var order = orders.FirstOrDefault(o => o.Id == paymentRequest.OrderId);
-                if (order != null)
+                if (result != null && result.Data != null)
                 {
-                    order.OrderStatus = OrderStatus.Processing;
+                    Nav.NavigateTo(result.Data.Url, forceLoad: true);
+
                 }
+                else
+                {
+                    errorAlert = "Payment session could not be created.";
+                }
+
             }
             else
             {
-                errorAlert = $"{response?.Errors}";
+                var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
+
+                if (response?.Success == true)
+                {
+                    alert = "Payment successful!";
+                    var order = orders.FirstOrDefault(o => o.Id == paymentRequest.OrderId);
+                    if (order != null)
+                    {
+                        order.OrderStatus = OrderStatus.Processing;
+                    }
+                }
+                else
+                {
+                    errorAlert = $"{response?.Errors}";
+                }
             }
+
+            
         }
         catch (Exception ex)
         {

@@ -1,4 +1,5 @@
 ﻿using BlazorApp1.DTOs;
+using EcommerceApp.DTOs;
 using EcommerceApp.DTOs.PaymentDTO;
 using ECommerceApp.DTOs.OrderDTOs;
 using ECommerceApp.DTOs.PaymentDTOs;
@@ -60,15 +61,38 @@ namespace BlazorApp1.Services
             return result;
         }
 
-        public async Task<string?> CreateCheckoutSession(StripeCheckoutDTO req)
+        public async Task<ApiResponse<StripeResponseDTO>> CreateCheckoutSession(StripeCheckoutDTO req)
         {
-            var response = await _http.PostAsJsonAsync("api/Payments/StripeCheckout", req);
+           //var json = new StripeCheckoutDTO
+           //{
+           //   Currency = "usd",
+           //   ProductName = "Eat that frog",
+           //   UnitPrice = 500,
+           //   Quantity = 1,
+           //  BaseUrl = "https://localhost:7094"
+           // }; 
+        var response = await _http.PostAsJsonAsync("api/Payments/create-stripe-session",req);
 
             if (!response.IsSuccessStatusCode)
                 return null;
 
-            var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
-            return body["url"];
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<StripeResponseDTO>>();
+            var responseData = new StripeResponseDTO
+            {
+                Url = result?.Data.Url
+            };
+            return new ApiResponse<StripeResponseDTO>(200, responseData);
         }
+        //public async Task<ApiResponse<StripeResponseDTO> CreateCheckoutSession(StripeCheckoutDTO req)
+        //{
+        //    var response = await _http.PostAsJsonAsync("api/Payments/StripeCheckout", req);
+
+        //    if (!response.IsSuccessStatusCode)
+        //        return null;
+
+        //    var body = await response.Content.ReadFromJsonAsync<ApiResponse<StripeResponseDTO>>();
+
+        //    return body?.Data?.Url;
+        //}
     }
 }
