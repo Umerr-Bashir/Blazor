@@ -143,17 +143,21 @@ else
                             <i class="bi"></i> Payment Details
                         </button>
 
-                        <button class="btn btn-primary btn-sm float-start mt-2" @onclick="() => OpenFeedbackModal(order)">
-                            <i class="bi"></i> Feedback
-                        </button>
+                        
 
                         @if (!isFeedback)
                         {
-                            
+                            <button class="btn btn-primary btn-sm float-start mt-2" @onclick="() => OpenFeedbackModal(order)">
+                                <i class="bi"></i> Feedback
+                            </button>
                         }
-                        <button class="btn btn-success btn-sm float-start mt-2">
-                            <i class="bi"></i> Feedback Submitted
-                        </button>
+                        else
+                        {
+                            <button class="btn btn-success btn-sm float-start mt-2">
+                                <i class="bi"></i> Feedback Submitted
+                            </button>
+                        }
+                        
 
                         if (order.OrderStatus.ToString().ToLower() != "Shipped".ToLower() || order.OrderStatus.ToString().ToLower() != "Canceled".ToLower())
                         {
@@ -361,7 +365,7 @@ else
                     <textarea class="form-control"
                               rows="4"
                               @bind="feedbackRequest.Comment">
-                </textarea>
+                    </textarea>
                 </div>
 
                 <!-- SUBMIT BUTTON -->
@@ -667,26 +671,22 @@ else
                 }
 
             }
-            else
-            {
-                var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
+            var response = await PaymentService.ProcessPaymentAsync(paymentRequest);
 
-                if (response?.Success == true)
+            if (response?.Success == true)
+            {
+                alert = "Payment successful!";
+                var order = orders.FirstOrDefault(o => o.Id == paymentRequest.OrderId);
+                if (order != null)
                 {
-                    alert = "Payment successful!";
-                    var order = orders.FirstOrDefault(o => o.Id == paymentRequest.OrderId);
-                    if (order != null)
-                    {
-                        order.OrderStatus = OrderStatus.Processing;
-                    }
-                }
-                else
-                {
-                    errorAlert = $"{response?.Errors}";
+                    order.OrderStatus = OrderStatus.Processing;
                 }
             }
+            else
+            {
+                errorAlert = $"{response?.Errors}";
+            }
 
-            
         }
         catch (Exception ex)
         {
