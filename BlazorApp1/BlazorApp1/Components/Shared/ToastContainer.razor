@@ -2,20 +2,31 @@
 @using BlazorBootstrap
 @inject MyToastService MyToastService
 
-<Toasts Messages="_messages" AutoHide="true" StackLength="5" Placement="ToastsPlacement.TopRight" />
+<Toasts Messages="_messages"
+        AutoHide="true"
+        StackLength="5"
+        Placement="ToastsPlacement.TopRight" />
 
 @code {
     private List<ToastMessage> _messages = new();
 
     protected override void OnInitialized()
     {
+        // Subscribe to event from service
         MyToastService.OnShow += ShowToast;
     }
 
     private void ShowToast(ToastMessage message)
     {
+        // Add the message to list
         _messages.Add(message);
 
+        // Trigger UI update
         InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        MyToastService.OnShow -= ShowToast;
     }
 }

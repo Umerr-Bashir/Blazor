@@ -31,6 +31,7 @@ builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<PaymentService>();
 builder.Services.AddScoped<CancellationService>();
 builder.Services.AddScoped<FeedbackService>();
+builder.Services.AddScoped<RefundService>();
 
 // Session State
 builder.Services.AddScoped<SessionState>();

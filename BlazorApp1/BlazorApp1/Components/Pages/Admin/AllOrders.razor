@@ -34,6 +34,7 @@ else
         <table class="table table-bordered mt-3">
             <thead>
                 <tr>
+                    <th>Order No.</th>
                     <th>Customer Name</th>
                     <th>Discount</th>
                     <th>Shipping</th>
@@ -48,6 +49,7 @@ else
                     @foreach (var order in orderDetails.Data)
                     {
                         <tr>
+                            <td>@(order.OrderNumber)</td>
                             <td>@(customerNames[order.CustomerId].Data?.FirstName) @(customerNames[order.CustomerId].Data?.LastName)</td>
                             <td>@((int)order.TotalDiscountAmount) PKR</td>
                             <td>@((int)order.ShippingCost) PKR</td>

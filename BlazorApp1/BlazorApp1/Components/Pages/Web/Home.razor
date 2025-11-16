@@ -4,11 +4,13 @@
 @using BlazorApp1.DTOs
 @using BlazorApp1.Services
 @using BlazorApp1.Services.Components
+@using BlazorBootstrap
 @using ECommerceApp.DTOs.AddressesDTOs
 @using ECommerceApp.DTOs.CategoryDTOs
 @using ECommerceApp.DTOs.OrderDTOs
 @using ECommerceApp.DTOs.ProductDTOs
 @using ECommerceApp.DTOs.ShoppingCartDTOs
+@using System.Drawing
 @layout BlazorApp1.Components.Layout.WebLayout
 @rendermode InteractiveServer
 @inject Blazored.Modal.Services.IModalService Modal
@@ -19,7 +21,6 @@
 @inject CartService CartService
 @inject AddressService AddressService
 @inject OrderService OrderService
-
 
 
 <div class="d-flex justify-content-between align-items-center mb-4 px-1">
@@ -34,8 +35,6 @@
         My Cart
     </button>
 </div>
-
-
 @if (alert != null)
 {
     <div class="alert alert-success">
@@ -103,8 +102,8 @@ else
                                             </span>
                                         </div>
 
-                                        <p class="text-success small mb-0">
-                                            @product.StockQuantity in stock
+                                        <p class="text-success mb-0 mt-1">
+                                            <b>@product.StockQuantity in stock</b>
                                         </p>
 
                                         <!-- Qty -->
@@ -124,6 +123,9 @@ else
                                                 <i class="bi bi-plus"></i>
                                             </button>
                                         </div>
+
+                                        <NavLink class="mt-5 text-decoration-none" href="@($"allFeedbacks/{product.Id}")">View Feedbacks</NavLink>
+
                                     </div>
 
                                     <div class="p-3">
@@ -359,7 +361,6 @@ else
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         userId = await LocalStorage.GetItemAsync<int>("userId");
-
         if (firstRender && !loaded)
         {
             // await getProducts();

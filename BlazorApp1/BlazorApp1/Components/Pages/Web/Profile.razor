@@ -47,7 +47,7 @@
         <div class="col-md-9 ps-md-4 mt-4 mt-md-0">
                 <div class="clearfix mb-2">
                     <h4 class="fw-bold mb-3 float-start">Profile Details</h4>
-                    <button class="btn btn-sm btn-primary float-end">Edit<span class="bi bi-pencil-fill ms-1"></span></button>
+                    <button class="btn btn-sm btn-primary float-end" @onclick="()=>OpenProfileModal()">Edit<span class="bi bi-pencil-fill ms-1"></span></button>
                 </div>
 
                 <div class="row">
@@ -196,6 +196,56 @@ else
 
 }
 
+
+<!-- Bootstrap Modal -->
+@if (isLoading)
+{
+    <Loader />
+}
+else
+{
+    // Blazor Modal
+    <BlazorModal Title="Edit Profile" IsVisible="@isProfileModalOpen" OnClose="CloseProfileModal">
+        <Body>
+            <EditForm Model="@profileModel" OnValidSubmit="SaveProfile">
+                <DataAnnotationsValidator />
+
+                @* <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <InputText class="form-control" readonly value="profileModel.FirstName profileModel.LastName" />
+                    <ValidationMessage For="@(() => profileModel.FirstName)" />
+                </div> *@
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <InputText class="form-control" @bind-Value="profileModel.Email" />
+                    <ValidationMessage For="@(() => profileModel.Email)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <InputText class="form-control" @bind-Value="profileModel.PhoneNumber" />
+                    <ValidationMessage For="@(() => profileModel.PhoneNumber)" />
+
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Date of Birth</label>
+                    <InputDate class="form-control" @bind-Value="profileModel.DateOfBirth" />
+                    <ValidationMessage For="@(() => profileModel.DateOfBirth)" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => CloseProfileModal()">Close</button>
+                    <button class="btn btn-primary">Save</button>
+
+                </div>
+            </EditForm>
+        </Body>
+    </BlazorModal>
+
+}
+
 @code {
     private ApiResponse<CustomerResponseDTO>? details;
     private ApiResponse<List<AddressResponseDTO>>? addressDetails = new();
@@ -208,13 +258,16 @@ else
     private ApiResponse<AddressResponseDTO>? addressResponse;
     private bool isLoading = false;
     private bool isModalOpen = false;
+    private bool isProfileModalOpen = false;
     private AddressCreateDTO addressModel = new();
+    private CustomerUpdateDTO profileModel = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
 
         if (firstRender && !loaded)
         {
+            isLoading = true;
             await getAddress();
 
 
@@ -227,6 +280,8 @@ else
             details = await CustomerService.GetProfileAsync();
             if(details.Success != false)
             {
+                isLoading = false;
+
                 loaded = true;
                 StateHasChanged(); // refresh UI after load
             }
@@ -234,6 +289,9 @@ else
             {
                 Nav.NavigateTo("/login");
             }
+
+            isLoading = false;
+
             StateHasChanged();
 
 
@@ -252,16 +310,49 @@ else
     {
         isModalOpen = false;
     }
+    // Opens Modal
+    private void OpenProfileModal()
+    {
+        profileModel.Email = details.Data.Email;
+        profileModel.PhoneNumber = details.Data.PhoneNumber;
+        profileModel.CustomerId = details.Data.Id;
+        // profileModel.DateOfBirth = details.Data.DateOfBirth;
+        StateHasChanged();
+        /////
+        isProfileModalOpen = true;
+    }
+
+    // Modal Closes
+    private void CloseProfileModal()
+    {
+        isProfileModalOpen = false;
+    }
 
     // Saves Address
     private async Task SaveAddress()
     {
+
         var response = await addressService.AddAddressAsync(addressModel);
         if (response?.Success == true)
         {
             MyToastService.Success("Address Added successfully.");
             await getAddress();
             isModalOpen = false;
+            StateHasChanged();
+        }
+    }
+    //// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    private async Task SaveProfile()
+    {
+        var response = await CustomerService.UpdateProfileAsync(profileModel);
+        if (response?.Success == true)
+        {
+            MyToastService.Success("Profile Update successfully.");
+            await getAddress();
+            isProfileModalOpen = false;
             StateHasChanged();
         }
     }

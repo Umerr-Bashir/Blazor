@@ -1,0 +1,174 @@
+﻿@page "/allFeedbacks/{ProductId:int}"
+@layout BlazorApp1.Components.Layout.WebLayout
+@rendermode InteractiveServer
+
+@using BlazorApp1.DTOs
+@using BlazorApp1.Services
+@using ECommerceApp.DTOs.FeedbackDTOs
+@inject FeedbackService FeedbackService
+
+<style>
+    .glass-card {
+        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.75);
+        border-radius: 18px;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    .feedback-card {
+        border-radius: 18px;
+        transition: 0.2s ease;
+    }
+
+        .feedback-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 22px rgba(0,0,0,0.12);
+        }
+
+    .star-filled {
+        color: #f4c542;
+        font-size: 1.4rem;
+    }
+
+    .star-empty {
+        color: #d1d1d1;
+        font-size: 1.4rem;
+    }
+
+    .avatar-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #0d6efd22;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #0d6efd;
+    }
+</style>
+
+<div class="container py-4" style="max-width: 850px;">
+
+    <h2 class="fw-bold mb-4 text-primary">Product Feedback</h2>
+
+    @if (isLoading)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Fetching feedbacks...</p>
+        </div>
+    }
+    else if (feedback == null)
+    {
+        <div class="alert alert-danger">Unable to load feedback.</div>
+    }
+    else
+    {
+        <!-- PRODUCT HEADER CARD -->
+        <div class="glass-card p-4 mb-4">
+
+            <h2 class="fw-semibold mb-2">@feedback.Data.ProductName</h2>
+
+            <div class="d-flex align-items-center gap-2 mb-1">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    if (i <= feedback.Data.AverageRating)
+                    {
+                        <span class="star-filled">★</span>
+                    }
+                    else
+                    {
+                        <span class="star-empty">☆</span>
+                    }
+                }
+
+                <span class="text-muted ms-2 fs-5">
+                    @feedback.Data.AverageRating.ToString("0.0") / 5
+                </span>
+            </div>
+
+            <small class="text-muted">
+                @feedback.Data.Feedbacks.Count feedback(s)
+            </small>
+        </div>
+
+        <h4 class="fw-semibold mb-3 text-dark">Customer Feedback</h4>
+
+        @if (feedback.Data.Feedbacks == null || !feedback.Data.Feedbacks.Any())
+        {
+            <div class="alert alert-info rounded-4">No feedback submitted yet.</div>
+        }
+        else
+        {
+            @foreach (var f in feedback.Data.Feedbacks)
+            {
+                <div class="feedback-card glass-card p-4 mb-3">
+
+                    <div class="d-flex justify-content-between align-items-center">
+
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-circle">@f.CustomerName[0]</div>
+
+                            <div>
+                                <h6 class="fw-bold mb-0">@f.CustomerName</h6>
+                                <small class="text-muted">
+                                    @f.CreatedAt.ToString("MMM dd, yyyy")
+                                </small>
+                            </div>
+                        </div>
+
+                        <div>
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= f.Rating)
+                                {
+                                    <span class="star-filled">★</span>
+                                }
+                                else
+                                {
+                                    <span class="star-empty">☆</span>
+                                }
+                            }
+
+                            <span class="badge bg-primary ms-1">@f.Rating / 5</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <p class="text-secondary mb-0">@f.Comment</p>
+
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public int ProductId { get; set; }
+
+    private ApiResponse<ProductFeedbackResponseDTO>? feedback;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFeedback();
+    }
+
+    private async Task LoadFeedback()
+    {
+        try
+        {
+            isLoading = true;
+            feedback = await FeedbackService.ProductFeedbackAsync(ProductId);
+        }
+        catch
+        {
+            feedback = null;
+        }
+
+        isLoading = false;
+    }
+}

@@ -1,11 +1,15 @@
 ﻿@inherits LayoutComponentBase
 @using BlazorApp1.Components.Shared
     
+<link href="_content/BlazorBootstrap/css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+<link href="_content/BlazorBootstrap/css/blazor.bootstrap.min.css" rel="stylesheet" />
+<script src="_content/BlazorBootstrap/js/blazor.bootstrap.bundle.min.js"></script>
+
 <div class="page">
-    <ToastContainer />
     <div class="sidebar">
         <NavMenu />
-        
+        <ToastContainer />
+
     </div>
     
     <main>
@@ -25,5 +29,4 @@
     <a href="" class="reload">Reload</a>
     <a class="dismiss">🗙</a>
 </div>
-
 

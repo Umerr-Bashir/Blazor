@@ -1,4 +1,5 @@
 ﻿using BlazorApp1.DTOs;
+using EcommerceApp.DTOs;
 using EcommerceApp.DTOs.CustomerDTO;
 using ECommerceApp.DTOs.AddressesDTOs;
 using ECommerceApp.DTOs.CustomerDTOs;
@@ -51,6 +52,26 @@ namespace BlazorApp1.Services
 
             // On success
             return result ?? new ApiResponse<CustomerResponseDTO>(500, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Invalid server response." });
+        }
+
+        public async Task<ApiResponse<ConfirmationResponseDTO>> UpdateProfileAsync(CustomerUpdateDTO customer)
+        {
+            var response = await _http.PostAsJsonAsync($"api/Customers/UpdateCustomer/", customer);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<ConfirmationResponseDTO>>();
+
+            // On 404 or any
+            if (!result.Success)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return new ApiResponse<ConfirmationResponseDTO>(404, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Address not found for this user." });
+                }
+
+                return new ApiResponse<ConfirmationResponseDTO>((int)response.StatusCode, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Request failed." });
+            }
+
+            // On success
+            return result ?? new ApiResponse<ConfirmationResponseDTO>(500, errors: new List<string> { result.Errors.FirstOrDefault() ?? "Invalid server response." });
         }
 
     }

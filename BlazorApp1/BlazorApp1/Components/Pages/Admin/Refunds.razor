@@ -1,0 +1,210 @@
+﻿@page "/refunds"
+@rendermode InteractiveServer
+@layout BlazorApp1.Components.Layout.MainLayout
+@using System.ComponentModel.DataAnnotations
+@using BlazorApp1.Components.Modals
+@using BlazorApp1.Components.Shared
+@using BlazorApp1.DTOs
+@using BlazorApp1.DTOs.ModalDTOs
+@using BlazorApp1.Services
+@using BlazorApp1.Services.Components
+@using BlazorBootstrap
+@using ECommerceApp.DTOs.CategoryDTOs
+@using ECommerceApp.DTOs.FeedbackDTOs
+@using ECommerceApp.DTOs.RefundDTOs
+@inject CategoryService CategoryService
+@inject FeedbackService FeedbackService
+@inject MyToastService MyToastService
+@inject RefundService RefundService
+
+
+
+
+<div class="clearfix mb-2">
+    <h4 class="float-start mb-0"><b>Feedbacks</b></h4>
+</div>
+
+@if (errorAlert != null)
+{
+    <div class="alert alert-danger">
+        @errorAlert
+    </div>
+}
+@if (isLoading)
+{
+    <Loader />
+}
+else
+{
+    <div class="card shadow-sm p-4 mb-4">
+
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Order Id</th>
+                    <th>Order Amount</th>
+                    <th>Cancellation Charges</th>
+                    <th>Refund Amount</th>
+                    <th>Remarks</th>
+                    @* <th>Action</th> *@
+                </tr>
+            </thead>
+            <tbody>
+                @if (refundDetails != null && refundDetails.Data != null && refundDetails.Data.Any())
+                {
+                    @foreach (var category in refundDetails.Data)
+                    {
+                        <tr>
+                            <td>@category.OrderId</td>
+                            <td>@((int)category.OrderAmount) PKR</td>
+                            <td class="text-danger">- @((int)category.CancellationCharge) PKR</td>
+                            <td>@(category.ComputedRefundAmount) PKR</td>
+                            <td>@category.CancellationRemarks</td>
+                            @* <td>
+                                <button class="btn btn-sm btn-outline-primary me-2">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => refundDetails(category)">Delete</button>
+                            </td> *@
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center">No Category Found</td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+    </div>
+}
+
+@* <BlazorModal Title="Add Category" IsVisible="@isModalOpen" OnClose="CloseModal">
+
+    <Body>
+        @if (isLoading)
+        {
+            <Loader />
+        }
+        else
+        {
+            <EditForm Model="@categoryModel" OnValidSubmit="SaveCategory">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">Category Name</label>
+                    <InputText class="form-control" @bind-Value="categoryModel.Name" />
+                    <ValidationMessage For="@(() => categoryModel.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Category Description</label>
+                    <InputText class="form-control" @bind-Value="categoryModel.Description" />
+                    <ValidationMessage For="@(() => categoryModel.Description)" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="() => CloseModal()">Close</button>
+                    <button class="btn btn-primary" @onclick="() => SaveCategory()">Save</button>
+
+                </div>
+            </EditForm>
+        }
+
+    </Body>
+
+</BlazorModal> *@
+
+@code {
+    private List<string>? error;
+    private string? errorAlert;
+    private bool loaded = false;
+    private bool isLoading = true;
+    private bool isModalOpen = false;
+    private CategoryCreateDTO categoryModel = new();
+    private ApiResponse<List<PendingRefundResponseDTO>> refundDetails = new();
+    private FeedbackDeleteDTO feedbackDelete = new();
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender && !loaded)
+        {
+            await getRefunds();
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // Opens Modal
+    private void OpenModal()
+    {
+        categoryModel = new CategoryCreateDTO();
+        isModalOpen = true;
+    }
+
+    // Modal Closes
+    private void CloseModal()
+    {
+        isModalOpen = false;
+    }
+
+
+
+    // DeleteAddress
+    // private async Task DeleteFeedback(FeedbackResponseDTO delete)
+    // {
+    //     feedbackDelete.FeedbackId = delete.Id;
+    //     feedbackDelete.CustomerId = delete.CustomerId;
+    //     try
+    //     {
+    //         var response = await FeedbackService.DeleteFeedbackAsync(feedbackDelete);
+    //         if (response != null && response.Success)
+    //         {
+    //             if (refundDetails?.Data != null)
+    //             {
+    //                 var itemToRemove = refundDetails.Data.FirstOrDefault(a => a.Id == delete.CustomerId);
+    //                 if (itemToRemove != null)
+    //                 {
+    //                     refundDetails.Data.Remove(itemToRemove);
+    //                 }
+    //             }
+    //             MyToastService.Error("Feedback Deleted.");
+    //             StateHasChanged();
+    //         }
+    //         else
+    //         {
+    //             error = new List<string>() { "Failed to delete category" };
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         error = new List<string>() { $"Error deleting category: {ex.InnerException}" };
+    //     }
+
+    // }
+
+
+    // Get Address Method
+    private async Task getRefunds()
+    {
+        var categoryRes = await RefundService.GetEligibleRefundsAsync();
+
+        if (categoryRes == null)
+        {
+            error = new List<string> { "No response from server." };
+        }
+        else if (!categoryRes.Success)
+        {
+            error = categoryRes.Errors;
+        }
+        else
+        {
+            refundDetails = categoryRes;
+        }
+    }
+
+
+
+}
